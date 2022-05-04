@@ -1,0 +1,20 @@
+#pragma once
+
+#define GLEW_STATIC
+#include "../vendor/glew/include/GL/glew.h"
+#include "../vendor/glfw/include/GLFW/glfw3.h"
+#include "../vendor/imgui/imgui.h"
+#include "../vendor/imgui/misc/cpp/imgui_stdlib.h"
+#include "../vendor/imgui/backends/imgui_impl_glfw.h"
+#include "../vendor/imgui/backends/imgui_impl_opengl3.h"
+#include "../vendor/imgui/imgui_internal.h"
+#include "../vendor/dialog/include/nfd.h"
+#include "../vendor/entt/single_include/entt/entt.hpp"
+#include "../vendor/yaml/include/yaml-cpp/yaml.h"
+#include "../vendor/glm/glm/glm.hpp"
+#include <iostream>
+#include <unordered_map>
+#include <functional>
+#include <memory>
+#include <source_location>
+#include <filesystem>
