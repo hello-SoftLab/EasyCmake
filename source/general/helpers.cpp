@@ -2,6 +2,18 @@
 #include "../object/registry.h"
 #include "../object/object.h"
 
+size_t HelperFunctions::HashPtr(void* ptr)
+{
+    return std::hash<void*>()(ptr);
+}
+
+
+
+std::string HelperFunctions::GenerateStringHash(void* ptr)
+{
+    return std::to_string(HashPtr(ptr));
+}
+
 bool HelperFunctions::EraseWordFromString(std::string& mainWord, std::string wordToLookFor) {
     auto iter = mainWord.find(wordToLookFor);
     
@@ -16,6 +28,18 @@ bool HelperFunctions::EraseWordFromString(std::string& mainWord, std::string wor
         iter = mainWord.find(wordToLookFor, iter);
     }
     return foundAny;
+}
+
+bool HelperFunctions::IsMetaClass(std::string className) {
+    return entt::resolve(entt::hashed_string(className.c_str())).operator bool();
+}
+
+bool HelperFunctions::IsMetaFunction(std::string className, std::string funcName)
+{
+    if (!IsMetaClass(className)) {
+        return false;
+    }
+    return entt::resolve(entt::hashed_string(className.c_str())).func(entt::hashed_string(funcName.c_str())).operator bool();
 }
 
 ObjectHandle::ObjectHandle(entt::entity ent)

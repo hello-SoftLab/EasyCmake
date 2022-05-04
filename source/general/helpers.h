@@ -4,6 +4,11 @@
 #include "../object/registry.h"
 
 
+namespace HelperClasses {
+    template<typename>
+    class Meta;
+};
+
 class Object;
 
 class ObjectHandle {
@@ -68,7 +73,9 @@ public:
     }
 
     
+    static size_t HashPtr(void* ptr);
 
+    static std::string GenerateStringHash(void* ptr);
 
     static bool EraseWordFromString(std::string& mainWord, std::string wordToLookFor);
 
@@ -115,28 +122,8 @@ public:
         return {};
     }
 
-    template<typename Class,typename FuncWithArgs>
-    static bool RegisterMemberMetaFunction(std::string funcMetaName) {
-        entt::id_type hash = HelperFunctions::HashClassName<Class>();
-        entt::meta<Class>().type(hash).template func<FuncWithArgs>(entt::hashed_string(funcMetaName.c_str()));
-        return true;
-    }
-
-    template<typename Class,typename Func>
-    static bool RegisterObjectMemberMetaFunction(std::string funcMetaName,Func function) {
-        entt::id_type hash = HelperFunctions::HashClassName<Class>();
-        entt::meta<Class>().type(hash).template func<&HelperFunctions::CallFunctionForObject<Class,Func>>(entt::hashed_string(funcMetaName.c_str()));
-        return true;
-    }
-
-    template<typename Base,typename Class, typename Func>
-    static bool RegisterVirtualObjectMemberMetaFunction(std::string funcMetaName) {
-        entt::id_type hash = HelperFunctions::HashClassName<Class>();
-        entt::meta<Class>().type(hash).template func<&HelperFunctions::CallFunctionForObjectWithVirtualBase<Base,Class, Func>>(entt::hashed_string(funcMetaName.c_str()));
-        return true;
-    }
-
-
+    static bool IsMetaClass(std::string className);
+    static bool IsMetaFunction(std::string className, std::string funcName);
     
 
     template<typename T>
@@ -157,45 +144,71 @@ public:
 
 
 private:
-    template<typename T,typename Func,typename... Args>
-    static bool CallFunctionForObject(entt::entity e,Args&&... args) {
-        if (!ObjectHandle(e)) {
-            return false;
-        }
-        
+
+    
+
+    template<typename T,auto Fun,typename... Args>
+    static constexpr auto CallFunctionForObject(entt::entity e, Args&&... args) {
+
+        T obj(e);
+
+        return std::invoke(Fun,&obj, std::forward<decltype(args)>(args)...);
+
+    }
+
+    
+
+
+    template<typename Base,typename T, auto Func, typename... Args>
+    static constexpr auto CallFunctionForObjectWithVirtualBase(entt::entity e, Args&&... args) {
+
         T obj(e);
 
         [&obj](auto&&... ar) {
-            (std::forward<T>(obj).*Func)(std::forward<decltype(ar)>(ar)...);
-        };
+            (((Base*)(&std::forward<T>(obj)))->*Func)(std::forward<decltype(ar)>(ar)...);
+        }(std::forward<decltype(args)>(args)...);
+
 
         return true;
 
-    }
+    };
 
-    template<typename Base,typename T, typename Func, typename... Args>
-    static bool CallFunctionForObjectWithVirtualBase(entt::entity e, Args&&... args) {
-        if (!ObjectHandle(e)) {
-            return false;
-        }
-
-        T obj(e);
-
-        ((Base*)(&obj))->Func(args...);
-
-        return true;
-
-    }
-
-
-
+    template<typename>
+    friend class HelperClasses::Meta;
+    
     
 };
 
-namespace HelperClass {
+namespace HelperClasses {
     class Null {
     private:
         int dummy = 0;
+    };
+
+    template<typename T>
+    class Meta {
+    public:
+
+        template<auto Func>
+        bool RegisterFunc(std::string funcMetaName) {
+            entt::meta<T>().type(hash).template func<Func>(entt::hashed_string(funcMetaName.c_str()));
+            return true;
+        };
+
+        template<typename Base,auto Func> 
+        bool RegisterVirtualMemberFunc(std::string funcMetaName) {
+            entt::meta<T>().type(hash).template func<&HelperFunctions::CallFunctionForObjectWithVirtualBase<Base,T, Func>>(entt::hashed_string(funcMetaName.c_str()));
+            return true;
+        }
+
+        template<auto Func>
+        bool RegisterMemberFunc(std::string funcMetaName) {
+            entt::meta<T>().type(hash).template func<&HelperFunctions::CallFunctionForObject<T, Func>>(entt::hashed_string(funcMetaName.c_str()));
+            return true;
+        }
+    private:
+        entt::id_type hash = HelperFunctions::HashClassName<T>();
+
     };
 
 }

@@ -1,6 +1,7 @@
 #include "window.h"
 #include "../cmake_generator/cmake_generator.h"
 
+
 Window::Window(int width, int height) {
     m_CurrentWindow = this;
     if(glfwInit() != GLFW_TRUE){
@@ -78,6 +79,7 @@ bool Window::EndFrame()
     glfwSwapBuffers(m_ContextPointer);
     glfwPollEvents();
 
+    
     return true;
 }
 

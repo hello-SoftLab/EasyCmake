@@ -101,21 +101,29 @@ void CMakeGenerator::ShowMainWindow()
 		ImGui::PopStyleColor();
 
 		
-		static std::string currentHoveredRepo = "";
-		for (auto& [name, repo] : m_Properties.repositories) {
+		
 
+		auto it = m_Properties.repositories.begin();
+		while(it != m_Properties.repositories.end()) {
+
+			auto& repo = *it;
+
+			if (!repo) {
+				it = m_Properties.repositories.erase(it);
+				continue;
+			}
 			
 
-			if (ImGui::Selectable(name.c_str())) {
+			if (ImGui::Selectable(repo.Get()->GetAlias().c_str())) {
 
 			}
 
-			if (ImGui::BeginPopupContextItem(("##" + std::to_string(std::hash<std::string>()(name))).c_str())) {
+			if (ImGui::BeginPopupContextItem(("##" + HelperFunctions::GenerateStringHash(repo.Get())).c_str())) {
 
 				ShowRepoCreateMenu();
 
 				if (ImGui::MenuItem("Modify")) {
-					repo.get()->ShowPopup();
+					ImGui::OpenPopup(("PopupForRepo" + HelperFunctions::GenerateStringHash(repo.Get())).c_str());
 				}
 
 				if (ImGui::MenuItem("Delete")) {
@@ -125,7 +133,7 @@ void CMakeGenerator::ShowMainWindow()
 				ImGui::EndPopup();
 			}
 
-
+			it++;
 		}
 
 		if (ImGui::BeginPopupContextWindow("##ExternalReposChildWindowPopupID", ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverExistingPopup)) {
@@ -148,9 +156,93 @@ void CMakeGenerator::ShowMainWindow()
 	if (ImGui::Button("Generate")) {
 
 	}
+	if (m_Properties.tempRepo) {
+		
+		ShowPopupForRepo(m_Properties.tempRepo);
+	}
+
+
+	for (auto& repo : m_Properties.repositories) {
+		if (!repo) {
+			continue;
+		}
+		ShowPopupForRepo(repo);
+	}
 
 
 	//ImGui::End();
+
+}
+
+void CMakeGenerator::ShowPopupForRepo(RepositoryHandle& repo)
+{
+	if (!repo) {
+		return;
+	}
+	std::string hash = HelperFunctions::GenerateStringHash(repo.Get());
+	if (ImGui::BeginPopup(("PopupForRepo" + hash).c_str())) {
+
+		ImGui::BeginChild(("ChildWindowForPopupRepo" + hash).c_str(),ImVec2(ImGui::GetContentRegionAvail().x,ImGui::GetContentRegionAvail().y - 40));
+
+		if(ImGui::BeginTable(("InitialTableForRepoPopup" + hash).c_str(),2,ImGuiTableFlags_BordersInner)) {
+			
+			ImGui::TableNextColumn();
+
+			ImGui::Text("Name*");
+
+			ImGui::TableNextColumn();
+
+			ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+			ImGui::InputText(("##" + hash).c_str(), &repo.Get()->m_Alias);
+
+
+			ImGui::EndTable();
+		}
+
+		repo.Get()->SetupPopupWidgets();
+
+		if(ImGui::BeginTable(("EndTableForRepoPopup" + hash).c_str(), 4)) {
+
+			ImGui::TableNextColumn();
+
+			ImGui::Text("* -> Required");
+
+			ImGui::TableNextColumn();
+			ImGui::TableNextColumn();
+
+			if (ImGui::Button("Ok")) {
+
+			}
+
+			ImGui::TableNextColumn();
+
+			if (ImGui::Button("Cancel")) {
+
+
+			}
+
+			ImGui::TableNextColumn();
+
+
+			ImGui::EndTable();
+		}
+
+
+		ImGui::EndPopup();
+	}
+}
+
+void CMakeGenerator::ValidateRepos()
+{
+	auto it = m_Properties.repositories.begin();
+
+	while (it != m_Properties.repositories.end()) {
+		if (!(*it)) {
+			it = m_Properties.repositories.erase(it);
+			continue;
+		}
+		it++;
+	}
 
 }
 

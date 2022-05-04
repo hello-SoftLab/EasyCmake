@@ -8,9 +8,8 @@ int main() {
 
 	Window window(640,480);
 
-	Object obj = ObjectPropertyRegister::CreateNew<Object>("HI");
-
-	HelperFunctions::RegisterObjectMemberMetaFunction<Object>("Get My Name",&Object::GetName);
+	
+	
 
 	while (window.IsOpen()) {
 

@@ -70,6 +70,8 @@ public:
 		entt::id_type hash = HelperFunctions::HashClassName<Attached>();
 		entt::meta<Attached>().type(hash).template func<&ObjectPropertyRegister::ForEachByTag<Tag,Attached>>(entt::hashed_string("ForEach"));
 		entt::meta<Attached>().type(hash).template func<&ObjectPropertyRegister::CreateObjectAndReturnHandle<Attached>>(entt::hashed_string("Create"));
+		
+		//HelperClasses::Meta<Attached>().RegisterVirtualMemberFunc<ObjectBase, &ObjectBase::Serialize>("Serialize");
 		entt::meta<Attached>().type(hash).template func<&ObjectPropertyRegister::CallSerializeForClass<Attached>>(entt::hashed_string("Serialize"));
 		entt::meta<Attached>().type(hash).template func<&ObjectPropertyRegister::CallDeserializeForClass<Attached>>(entt::hashed_string("Deserialize"));
 		entt::meta<Attached>().type(hash).template func<&ObjectPropertyRegister::CallDestroyForObject<Attached>>(entt::hashed_string("Destroy"));
