@@ -53,9 +53,18 @@ bool Window::IsOpen() {
     return !glfwWindowShouldClose(this->m_ContextPointer);
 }
 
+
+void Window::BeginFrame()
+{
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, Color(50, 50, 50).AsImVec4());
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, Color(40, 40, 40).AsImVec4());
+}
 bool Window::EndFrame()
 {
-
+    ImGui::PopStyleColor(2);
     ImGuiIO& io = ImGui::GetIO();
     ImGui::Render();
     if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
@@ -140,13 +149,6 @@ void Window::ShowGUI()
     ImGui::End();
 
 
-}
-
-void Window::BeginFrame()
-{
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
 }
 
 Window& Window::GetCurrentWindow()

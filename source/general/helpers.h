@@ -1,5 +1,6 @@
 #pragma once
 #include "includes.h"
+#include "color.h"
 
 class HelperFunctions {
 public:
