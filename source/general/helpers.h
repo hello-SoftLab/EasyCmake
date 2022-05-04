@@ -1,6 +1,44 @@
 #pragma once
 #include "includes.h"
 #include "color.h"
+#include "../object/registry.h"
+
+
+class Object;
+
+class ObjectHandle {
+public:
+    ObjectHandle(entt::entity ent);
+    ObjectHandle(Object obj);
+    ObjectHandle();
+
+    Object GetAsObject();
+
+    template<typename T>
+    T GetAs() {
+        return T(m_Handle);
+    }
+
+    operator bool() const;
+
+    entt::entity ID();
+
+    std::string GetType();
+
+    std::string ToString();
+
+    bool IsType(entt::id_type type);
+
+    bool operator==(const ObjectHandle& other);
+
+
+
+private:
+    entt::entity m_Handle = entt::null;
+    bool isNull = false;
+
+};
+
 
 class HelperFunctions {
 public:
@@ -77,16 +115,77 @@ public:
         return {};
     }
 
+    template<typename Class,typename FuncWithArgs>
+    static bool RegisterMemberMetaFunction(std::string funcMetaName) {
+        entt::id_type hash = HelperFunctions::HashClassName<Class>();
+        entt::meta<Class>().type(hash).template func<FuncWithArgs>(entt::hashed_string(funcMetaName.c_str()));
+        return true;
+    }
+
+    template<typename Class,typename Func>
+    static bool RegisterObjectMemberMetaFunction(std::string funcMetaName,Func function) {
+        entt::id_type hash = HelperFunctions::HashClassName<Class>();
+        entt::meta<Class>().type(hash).template func<&HelperFunctions::CallFunctionForObject<Class,Func>>(entt::hashed_string(funcMetaName.c_str()));
+        return true;
+    }
+
+    template<typename Base,typename Class, typename Func>
+    static bool RegisterVirtualObjectMemberMetaFunction(std::string funcMetaName) {
+        entt::id_type hash = HelperFunctions::HashClassName<Class>();
+        entt::meta<Class>().type(hash).template func<&HelperFunctions::CallFunctionForObjectWithVirtualBase<Base,Class, Func>>(entt::hashed_string(funcMetaName.c_str()));
+        return true;
+    }
+
 
     
 
+    template<typename T>
+    static void SerializeVariable(std::string name, T& var, YAML::Node& node) {
+        node[name] = var;
+    }
+
+    template<typename T>
+    static void DeserializeVariable(std::string name, T& var, YAML::Node& node) {
+        if (node[name]) {
+            var = node[name].as<T>();
+        }
+
+    }
     
 
 
 
 
 private:
+    template<typename T,typename Func,typename... Args>
+    static bool CallFunctionForObject(entt::entity e,Args&&... args) {
+        if (!ObjectHandle(e)) {
+            return false;
+        }
+        
+        T obj(e);
 
+        [&obj](auto&&... ar) {
+            (std::forward<T>(obj).*Func)(std::forward<decltype(ar)>(ar)...);
+        };
+
+        return true;
+
+    }
+
+    template<typename Base,typename T, typename Func, typename... Args>
+    static bool CallFunctionForObjectWithVirtualBase(entt::entity e, Args&&... args) {
+        if (!ObjectHandle(e)) {
+            return false;
+        }
+
+        T obj(e);
+
+        ((Base*)(&obj))->Func(args...);
+
+        return true;
+
+    }
 
 
 
