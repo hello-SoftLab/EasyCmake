@@ -118,7 +118,7 @@ void Window::ShowGUI()
     }
 
 
-    /*
+    
     ImGuiID id = ImGui::GetID("MainWindowGroup");
 
 
@@ -130,7 +130,7 @@ void Window::ShowGUI()
 
 
         ImGui::DockBuilderRemoveNode(id);
-        ImGui::DockBuilderAddNode(id, ImGuiDockNodeFlags_AutoHideTabBar);
+        ImGui::DockBuilderAddNode(id, ImGuiDockNodeFlags_PassthruCentralNode);
 
         ImGui::DockBuilderSetNodeSize(id, ImGui::GetMainViewport()->WorkSize);
         ImGui::DockBuilderSetNodePos(id, ImGui::GetMainViewport()->WorkPos);
@@ -143,7 +143,7 @@ void Window::ShowGUI()
         firstLoop = false;
 
 
-    }*/
+    }
 
     CMakeGenerator::ShowMainWindow();
 

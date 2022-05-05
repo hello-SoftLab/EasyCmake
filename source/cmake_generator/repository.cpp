@@ -15,6 +15,32 @@ void Repository::SetupPopupWidgets()
 {
 }
 
+void Repository::OpenPopup()
+{
+	m_ShouldOpenPopup = true;
+}
+
+void Repository::ClosePopup()
+{
+	m_ShouldOpenPopup = false;
+}
+
+bool Repository::IsPopupOpen()
+{
+	return m_ShouldOpenPopup;
+}
+
+
+std::string Repository::GetPopupID()
+{
+	return ("PopupForRepo" + GetHash());
+}
+
+
+std::string Repository::GetHash()
+{
+	return "##" + HelperFunctions::GenerateStringHash(this);
+}
 
 std::string Repository::GetAlias()
 {
@@ -24,6 +50,11 @@ std::string Repository::GetAlias()
 RepositoryHandle::operator bool() const
 {
 	return m_Pointer.operator bool();
+}
+
+void RepositoryHandle::ClearCurrentType()
+{
+	m_Pointer.reset();
 }
 
 Repository* RepositoryHandle::Get()
