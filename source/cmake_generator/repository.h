@@ -1,6 +1,6 @@
 #pragma once
 #include "../global.h"
-
+#include "pointer_holder.h"
 
 
 
@@ -32,35 +32,6 @@ private:
 	friend class CMakeGenerator;
 };
 
-class RepositoryHandle {
-public:
-	operator bool() const;
-
-	template<typename T>
-	requires std::is_base_of<Repository,T>::value
-	void HoldType() {
-		auto deleter = [](Repository* ptr) {
-			delete ((T*)ptr);
-		};
-		m_CurrentType = HelperFunctions::GetClassName<T>();
-		m_Pointer = std::shared_ptr<Repository>(new T(),deleter);
-	}
-
-	void ClearCurrentType();
-
-	template<typename T>
-	T* GetAs() {
-		return (T*)m_Pointer.get();
-	}
-
-	Repository* Get();
-
-	std::string GetType();
-
-
-private:
-	std::string m_CurrentType = "";
-	std::shared_ptr<Repository> m_Pointer;
-
+class RepositoryHandle : public PointerHolder<Repository> {
 
 };
