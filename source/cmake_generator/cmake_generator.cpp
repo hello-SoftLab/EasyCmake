@@ -1,5 +1,6 @@
 #include "cmake_generator.h"
 #include "external_repo.h"
+#include <format>
 
 void CMakeGenerator::ShowMainWindow()
 {
@@ -33,12 +34,12 @@ void CMakeGenerator::ShowMainWindow()
 
 		ImGui::TableNextColumn();
 
-		ImGui::Text("Target Name");
-
+		ImGui::Text("Project Name");
+		
 		ImGui::TableNextColumn();
 
 		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-		ImGui::InputText("##TargetNameInput",&m_Properties.targetName);
+		ImGui::InputText("##ProjectNameInput", &m_Properties.projectName);
 
 		ImGui::TableNextColumn();
 
@@ -160,7 +161,9 @@ void CMakeGenerator::ShowMainWindow()
 	ImGui::EndChild();
 
 	if (ImGui::Button("Generate")) {
-
+		if (ValidateInputs()) {
+			GenerateCMakeLists();
+		}
 	}
 
 	
@@ -296,4 +299,148 @@ void CMakeGenerator::ShowRepoCreateMenu()
 
 		ImGui::EndMenu();
 	}
+}
+
+void CMakeGenerator::GenerateCMakeLists()
+{
+	std::string textFile = "";
+	
+	AddInitialDetails(textFile);
+
+	if (m_Properties.sourceFiles != "") {
+		AddSourceFiles(textFile);
+
+		AddExecutableAndSetDetails(textFile);
+
+		AddIncludeDirectories(textFile);
+	}
+
+	
+
+
+	std::cout << textFile << std::endl;
+	
+}
+
+bool CMakeGenerator::ValidateInputs()
+{
+	if (m_Properties.projectName == "") {
+		return false;
+	}
+	return true;
+}
+
+void CMakeGenerator::AddSourceFiles(std::string& stringToAdd)
+{
+	stringToAdd += R"(
+
+#adding general source files
+)";
+
+	for (auto& filePath : HelperFunctions::SplitString(m_Properties.sourceFiles, "\n")) {
+		stringToAdd += R"(
+list(APPEND ${PROJECT_NAME}_SOURCE_FILES ${PROJECT_SOURCE_DIR}/)";
+		stringToAdd += fmt::format("{}\n", filePath);
+
+	}
+}
+
+void CMakeGenerator::AddIncludeDirectories(std::string& stringToAdd)
+{
+
+	if (m_Properties.includeDirectories == "") {
+		return;
+	}
+
+	stringToAdd += R"(
+
+#adding include directories
+)";
+
+	for (auto& dir : HelperFunctions::SplitString(m_Properties.includeDirectories,"\n")) {
+		stringToAdd += R"(
+target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/)";
+
+		stringToAdd += fmt::format("{})\n\n",dir);
+	}
+}
+
+void CMakeGenerator::AddInitialDetails(std::string& stringToAdd)
+{
+	stringToAdd += R"(
+
+#this CMakeLists was created with EasyCmake - V2 
+#the repository can be found at https://github.com/knz13/EasyCmake_Cpp
+
+#adding useful functions
+
+function(DIR_EXISTS variable dir_path)
+
+file(GLOB ${variable}_check ${dir_path}/*)
+
+list(LENGTH ${variable}_check ${variable}_len)
+
+if(${${variable}_len} EQUAL 0)
+
+set(${variable} FALSE PARENT_SCOPE)
+
+else()
+
+set(${variable} TRUE PARENT_SCOPE)
+
+endif()
+
+endfunction()
+
+#adding extra cmake libs
+include(GNUInstallDirs)
+include(ExternalProject)
+include(FetchContent)
+
+
+#project name
+)";
+
+	stringToAdd += fmt::format(R"(project("{}"))", m_Properties.projectName).c_str();
+
+	stringToAdd += R"(
+#creating variables for ease of adding libraries
+set(${PROJECT_NAME}_SOURCE_FILES)
+)";
+
+	if (m_Properties.repositories.size() > 0) {
+		stringToAdd += "set(${PROJECT_NAME}_DEPS_TO_BUILD)\n";
+		stringToAdd += "set(${ PROJECT_NAME }_LIBRARIES)\n";
+		stringToAdd += "set(${PROJECT_NAME}_INCLUDES)\n\n\n";
+	}
+
+
+}
+
+void CMakeGenerator::AddExecutableAndSetDetails(std::string& stringToAdd)
+{
+	stringToAdd += R"(
+#creating executable
+add_executable(${PROJECT_NAME}
+	${${PROJECT_NAME}_SOURCE_FILES}
+)
+
+set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD )";
+
+	stringToAdd += fmt::format("{})\n",m_Properties.cppStandard.substr(3));
+
+	if (m_Properties.repositories.size() > 0) {
+		stringToAdd += R"(
+
+#adding dependencies
+foreach(X ${${PROJECT_NAME}_DEPS_TO_BUILD})
+
+    add_dependencies(${PROJECT_NAME} ${X})
+
+endforeach()
+
+)";
+	}
+	
+
 }

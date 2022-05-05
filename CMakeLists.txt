@@ -268,6 +268,37 @@ set(${PROJECT_NAME}_LIBRARIES )
         FetchContent_MakeAvailable(GLM)
 
     endif()
+
+# repository download and settings for fmt...
+
+    dir_exists(fmt_exists ${PROJECT_SOURCE_DIR}/vendor/fmt)
+
+
+    # adding includes:
+
+
+        list(APPEND ${PROJECT_NAME}_INCLUDES ${PROJECT_SOURCE_DIR}/vendor/fmt/include)
+
+
+    # adding libraries
+
+
+        list(APPEND ${PROJECT_NAME}_LIBRARIES ${PROJECT_SOURCE_DIR}/vendor/fmt/lib/${CMAKE_STATIC_LIBRARY_PREFIX}fmt$<$<CONFIG:Debug>:d>${CMAKE_STATIC_LIBRARY_SUFFIX})
+
+
+    if(NOT ${fmt_exists} OR NOT ${${PROJECT_NAME}_BUILD_TYPE} STREQUAL ${CMAKE_BUILD_TYPE})
+        ExternalProject_Add(FMT
+        GIT_REPOSITORY https://github.com/fmtlib/fmt
+        GIT_TAG 8.1.1
+        CMAKE_ARGS  -DCMAKE_INSTALL_PREFIX:PATH=${PROJECT_SOURCE_DIR}/vendor/fmt
+                    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+        BUILD_BYPRODUCTS ${PROJECT_SOURCE_DIR}/vendor/fmt/lib/${CMAKE_STATIC_LIBRARY_PREFIX}fmt$<$<CONFIG:Debug>:d>${CMAKE_STATIC_LIBRARY_SUFFIX}
+        )
+
+        list(APPEND ${PROJECT_NAME}_DEPS_TO_BUILD FMT)
+
+    endif()
+
                     
 
 

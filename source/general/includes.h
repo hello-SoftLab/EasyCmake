@@ -12,6 +12,7 @@
 #include "../vendor/entt/single_include/entt/entt.hpp"
 #include "../vendor/yaml/include/yaml-cpp/yaml.h"
 #include "../vendor/glm/glm/glm.hpp"
+#include "../vendor/fmt/include/fmt/format.h"
 #include <iostream>
 #include <unordered_map>
 #include <functional>
