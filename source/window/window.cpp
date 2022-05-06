@@ -1,6 +1,6 @@
 #include "window.h"
 #include "../cmake_generator/cmake_generator.h"
-
+#include "../cmake_generator/window_manager.h"
 
 Window::Window(int width, int height) {
     m_CurrentWindow = this;
@@ -118,32 +118,7 @@ void Window::ShowGUI()
     }
 
 
-    
-    ImGuiID id = ImGui::GetID("MainWindowGroup");
-
-
-
-
-    ImGui::DockSpace(id);
-
-    if (firstLoop) {
-
-
-        ImGui::DockBuilderRemoveNode(id);
-        ImGui::DockBuilderAddNode(id, ImGuiDockNodeFlags_PassthruCentralNode);
-
-        ImGui::DockBuilderSetNodeSize(id, ImGui::GetMainViewport()->WorkSize);
-        ImGui::DockBuilderSetNodePos(id, ImGui::GetMainViewport()->WorkPos);
-
-        ImGuiID firstWindow = ImGui::DockBuilderSplitNode(id,ImGuiDir_Left,1.0f,nullptr,&id);
-
-        ImGui::DockBuilderDockWindow("CmakeWindow",firstWindow);
-
-        ImGui::DockBuilderFinish(id);
-        firstLoop = false;
-
-
-    }
+    WindowManager::HandleWindowModes();
 
     CMakeGenerator::ShowMainWindow();
 
@@ -151,6 +126,11 @@ void Window::ShowGUI()
     ImGui::End();
 
 
+}
+
+GLFWwindow* Window::GetContextPointer()
+{
+    return m_ContextPointer;
 }
 
 Window& Window::GetCurrentWindow()

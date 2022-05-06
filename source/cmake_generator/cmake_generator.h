@@ -1,14 +1,27 @@
 #pragma once
 #include "../global.h"
 #include "repository.h"
+#include "library_settings.h"
+#include "include_settings.h"
+
+
+struct TargetGenerator {
+	std::string name = "";
+	bool isLibrary = "";
+	std::string sourceFiles = "";
+	std::string cppStandard = "C++20";
+	std::vector<SettingsHolder> includes;
+	std::vector<SettingsHolder> libraries;
+
+	void ShowWidgets();
+};
+
 
 struct CmakeGeneratorProperties {
 	std::string currentDirectory = std::filesystem::current_path().lexically_normal().string();
 	bool shouldCreateLibrary = false;
 	std::string projectName = "";
-	std::string cppStandard = "C++20";
-	std::string sourceFiles = "";
-	std::string includeDirectories = "";
+	std::vector<PointerHolder<TargetGenerator>> targets;
 	std::vector<RepositoryHandle> repositories;
 	RepositoryHandle tempRepo;
 };

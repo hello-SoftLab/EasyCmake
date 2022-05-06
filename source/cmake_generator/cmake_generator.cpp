@@ -4,6 +4,8 @@
 
 void CMakeGenerator::ShowMainWindow()
 {
+	ImGui::ShowDemoWindow();
+
 	ImGui::Begin("CmakeWindow",0,ImGuiWindowFlags_NoTitleBar);
 
 	ImGui::BeginChild("CmakeWindowNormalSettings",ImVec2(0,ImGui::GetContentRegionAvail().y - 25),true);
@@ -43,55 +45,7 @@ void CMakeGenerator::ShowMainWindow()
 
 		ImGui::TableNextColumn();
 
-		ImGui::Text("C++ Standard");
-
-		ImGui::TableNextColumn();
 		
-		static std::vector<const char*> cppStandards = { "C++20","C++17","C++14","C++11","C++03","C++98" };
-		
-
-		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-		if (ImGui::BeginCombo("##CppStandardCombo", m_Properties.cppStandard.c_str())) {
-
-			for (auto item : cppStandards) {
-				const bool is_selected = m_Properties.cppStandard == item;
-
-				if (ImGui::Selectable(item, is_selected)) {
-					m_Properties.cppStandard = item;
-				}
-				if (is_selected) {
-					ImGui::SetItemDefaultFocus();
-				}
-
-
-			}
-
-			ImGui::EndCombo();
-
-		}
-		ImGui::TableNextColumn();
-
-		ImGui::Text("Source Files*");
-
-		ImGui::TableNextColumn();
-
-		ImGui::TableNextColumn();
-
-		ImGui::InputTextMultiline("##SourceFilesMultiline", &m_Properties.sourceFiles,ImVec2(ImGui::GetContentRegionAvail().x,0));
-
-		ImGui::TableNextColumn();
-
-		ImGui::TableNextColumn();
-
-		ImGui::Text("Include Directories");
-
-		ImGui::TableNextColumn();
-		ImGui::TableNextColumn();
-
-		ImGui::InputTextMultiline("##IncludeDirectoriesMultiline", &m_Properties.includeDirectories,ImVec2(ImGui::GetContentRegionAvail().x,0));
-
-		ImGui::TableNextColumn();
-		ImGui::TableNextColumn();
 		
 		ImGui::Text("External Repositories");
 
@@ -306,7 +260,7 @@ void CMakeGenerator::GenerateCMakeLists()
 	std::string textFile = "";
 	
 	AddInitialDetails(textFile);
-
+	/*
 	if (m_Properties.sourceFiles != "") {
 		AddSourceFiles(textFile);
 
@@ -314,6 +268,7 @@ void CMakeGenerator::GenerateCMakeLists()
 
 		AddIncludeDirectories(textFile);
 	}
+	*/
 
 	
 
@@ -336,33 +291,21 @@ void CMakeGenerator::AddSourceFiles(std::string& stringToAdd)
 
 #adding general source files
 )";
-
+	/*
 	for (auto& filePath : HelperFunctions::SplitString(m_Properties.sourceFiles, "\n")) {
 		stringToAdd += R"(
 list(APPEND ${PROJECT_NAME}_SOURCE_FILES ${PROJECT_SOURCE_DIR}/)";
 		stringToAdd += fmt::format("{}\n", filePath);
 
-	}
+	}  ADD LATER
+	*/
 }
 
 void CMakeGenerator::AddIncludeDirectories(std::string& stringToAdd)
 {
 
-	if (m_Properties.includeDirectories == "") {
-		return;
-	}
+	
 
-	stringToAdd += R"(
-
-#adding include directories
-)";
-
-	for (auto& dir : HelperFunctions::SplitString(m_Properties.includeDirectories,"\n")) {
-		stringToAdd += R"(
-target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/)";
-
-		stringToAdd += fmt::format("{})\n\n",dir);
-	}
 }
 
 void CMakeGenerator::AddInitialDetails(std::string& stringToAdd)
@@ -419,28 +362,57 @@ set(${PROJECT_NAME}_SOURCE_FILES)
 
 void CMakeGenerator::AddExecutableAndSetDetails(std::string& stringToAdd)
 {
-	stringToAdd += R"(
-#creating executable
-add_executable(${PROJECT_NAME}
-	${${PROJECT_NAME}_SOURCE_FILES}
-)
-
-set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD )";
-
-	stringToAdd += fmt::format("{})\n",m_Properties.cppStandard.substr(3));
-
-	if (m_Properties.repositories.size() > 0) {
-		stringToAdd += R"(
-
-#adding dependencies
-foreach(X ${${PROJECT_NAME}_DEPS_TO_BUILD})
-
-    add_dependencies(${PROJECT_NAME} ${X})
-
-endforeach()
-
-)";
-	}
+	
 	
 
+}
+
+void TargetGenerator::ShowWidgets()
+{
+	if (ImGui::BeginTable(("TargetTableFor" + HelperFunctions::HashPtr(this)).c_str(), 2, ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_BordersInner)) {
+
+		ImGui::Text("C++ Standard");
+
+		ImGui::TableNextColumn();
+
+		static std::vector<const char*> cppStandards = { "C++20","C++17","C++14","C++11","C++03","C++98" };
+
+
+		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+		if (ImGui::BeginCombo("##CppStandardCombo", cppStandard.c_str())) {
+
+			for (auto item : cppStandards) {
+				const bool is_selected = cppStandard == item;
+
+				if (ImGui::Selectable(item, is_selected)) {
+					cppStandard = item;
+				}
+				if (is_selected) {
+					ImGui::SetItemDefaultFocus();
+				}
+
+
+			}
+
+			ImGui::EndCombo();
+
+		}
+		ImGui::TableNextColumn();
+
+		ImGui::Text("Source Files*");
+
+		ImGui::TableNextColumn();
+
+		ImGui::TableNextColumn();
+
+		ImGui::InputTextMultiline("##SourceFilesMultiline", &sourceFiles, ImVec2(ImGui::GetContentRegionAvail().x, 0));
+
+		ImGui::TableNextColumn();
+
+		ImGui::TableNextColumn();
+
+		
+
+		ImGui::EndTable();
+	}
 }
