@@ -71,3 +71,18 @@ void ExternalRepository::SetupPopupWidgets()
 	}
 	
 }
+
+size_t ExternalRepository::GetNumberOf(std::string name)
+{
+	if (name == "sources") {
+		return HelperFunctions::SplitString(m_SourcesToAdd, "\n").size();
+	}
+	if (name == "includes") {
+		return HelperFunctions::SplitString(m_IncludePaths, "\n").size();
+	}
+	if (name == "libraries") {
+		return HelperFunctions::SplitString(m_Libraries, "\n").size();
+	}
+
+	return 0;
+}

@@ -12,7 +12,7 @@ public:
     void BeginFrame();
     
 
-    static GLFWwindow* GetContextPointer();
+    GLFWwindow* GetContextPointer();
     static Window& GetCurrentWindow();
 
 private:

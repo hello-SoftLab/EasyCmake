@@ -10,10 +10,14 @@ public:
 
 	virtual void SetupPopupWidgets();
 
+	virtual size_t GetNumberOf(std::string type);
+
+
 	void OpenPopup();
 	void ClosePopup();
 
 	bool IsPopupOpen();
+
 
 	
 

@@ -3,6 +3,10 @@
 
 void WindowManager::HandleWindowModes()
 {
+	ImGuiID id = ImGui::GetID("MainWindowGroup");
+
+	ImGui::DockSpace(id);
+
 	if (m_ShouldSetup) {
 		switch (m_CurrentType) {
 		case WindowType::Simple:
@@ -37,7 +41,7 @@ void WindowManager::SetupSimpleWindow()
 {
 	ImGuiID id = ImGui::GetID("MainWindowGroup");
 
-	ImGui::DockSpace(id);
+	//ImGui::DockSpace(id);
 
 	ImGui::DockBuilderRemoveNode(id);
 	ImGui::DockBuilderAddNode(id, ImGuiDockNodeFlags_PassthruCentralNode);
@@ -57,7 +61,7 @@ void WindowManager::SetupAdvancedWindow()
 {
 	ImGuiID id = ImGui::GetID("MainWindowGroup");
 
-	ImGui::DockSpace(id);
+	//ImGui::DockSpace(id);
 
 	ImGui::DockBuilderRemoveNode(id);
 	ImGui::DockBuilderAddNode(id, ImGuiDockNodeFlags_PassthruCentralNode);

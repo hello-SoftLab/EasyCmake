@@ -1,8 +1,10 @@
 #pragma once
-#include "settings_descriptor.h
+#include "settings_descriptor.h"
 
 
 
 class IncludeSettings : public SettingsDescriptor {
+
+private:
 
 };

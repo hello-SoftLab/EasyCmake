@@ -7,7 +7,7 @@
 
 class ExternalRepository : public Repository {
 public:
-
+	
 
 
 private:
@@ -19,6 +19,7 @@ private:
 	std::string m_Libraries = "";
 	std::string m_CmakeArgs = "";
  
-	void SetupPopupWidgets();
+	void SetupPopupWidgets() override;
+	size_t GetNumberOf(std::string name) override;
 
 };

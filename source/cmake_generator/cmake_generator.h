@@ -5,13 +5,15 @@
 #include "include_settings.h"
 
 
+
 struct TargetGenerator {
 	std::string name = "";
-	bool isLibrary = "";
+	bool isLibrary = false;
 	std::string sourceFiles = "";
 	std::string cppStandard = "C++20";
-	std::vector<SettingsHolder> includes;
-	std::vector<SettingsHolder> libraries;
+	std::string includes = "";
+	std::string libraries = "";
+	std::vector<RepositoryHandle> externalRepos;
 
 	void ShowWidgets();
 };
@@ -29,7 +31,8 @@ struct CmakeGeneratorProperties {
 class CMakeGenerator {
 public:
 
-
+	static const std::vector<RepositoryHandle>& Repositories();
+	static CmakeGeneratorProperties& Settings();
 	static void ShowMainWindow();
 
 private:

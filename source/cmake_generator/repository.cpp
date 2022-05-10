@@ -12,6 +12,11 @@ void Repository::SetupPopupWidgets()
 {
 }
 
+size_t Repository::GetNumberOf(std::string type)
+{
+	return 0;
+}
+
 void Repository::OpenPopup()
 {
 	m_ShouldOpenPopup = true;

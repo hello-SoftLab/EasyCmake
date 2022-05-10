@@ -6,7 +6,7 @@ void CMakeGenerator::ShowMainWindow()
 {
 	ImGui::ShowDemoWindow();
 
-	ImGui::Begin("CmakeWindow",0,ImGuiWindowFlags_NoTitleBar);
+	ImGui::Begin("CmakeWindow",0,ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
 
 	ImGui::BeginChild("CmakeWindowNormalSettings",ImVec2(0,ImGui::GetContentRegionAvail().y - 25),true);
 
@@ -26,16 +26,6 @@ void CMakeGenerator::ShowMainWindow()
 
 		ImGui::TableNextColumn();
 
-		ImGui::Text("Create Library");
-
-		ImGui::TableNextColumn();
-		
-		if (ImGui::Checkbox("##LibraryCheckbox", &m_Properties.shouldCreateLibrary)) {
-
-		}
-
-		ImGui::TableNextColumn();
-
 		ImGui::Text("Project Name");
 		
 		ImGui::TableNextColumn();
@@ -44,8 +34,6 @@ void CMakeGenerator::ShowMainWindow()
 		ImGui::InputText("##ProjectNameInput", &m_Properties.projectName);
 
 		ImGui::TableNextColumn();
-
-		
 		
 		ImGui::Text("External Repositories");
 
@@ -94,6 +82,10 @@ void CMakeGenerator::ShowMainWindow()
 
 				it++;
 			}
+
+			
+
+
 			ImGui::EndTable();
 		}
 
@@ -106,11 +98,48 @@ void CMakeGenerator::ShowMainWindow()
 
 		ImGui::EndChild();
 		
+		ImGui::TableNextColumn();
 
 
 
 		ImGui::EndTable();
 	}
+
+	
+
+	if (ImGui::BeginTabBar("TargetsTabBar", ImGuiTabBarFlags_Reorderable)) {
+		int index = 1;
+		auto it = m_Properties.targets.begin();
+		while (it != m_Properties.targets.end()) {
+			auto& target = *it;
+			if (target) {
+				
+				bool open = true;
+
+				if (ImGui::BeginTabItem(("Target " + std::to_string(index) + "##" + HelperFunctions::GenerateStringHash(&target)).c_str(),&open)) {
+					
+					target.Get()->ShowWidgets();
+
+					ImGui::EndTabItem();
+				}
+				index++;
+
+				if (!open) {
+					it = m_Properties.targets.erase(it);
+					continue;
+				}
+				
+			}
+			it++;
+		}
+
+		if (ImGui::TabItemButton("+", ImGuiTabItemFlags_Trailing)) {
+			m_Properties.targets.emplace_back().HoldType<TargetGenerator>().name = "new Target";
+		}
+
+		ImGui::EndTabBar();
+	}
+
 
 	ImGui::EndChild();
 
@@ -139,8 +168,22 @@ void CMakeGenerator::ShowMainWindow()
 
 	ValidateRepos();
 
+	//ImGui::ShowDemoWindow();
+
+
 	ImGui::End();
 
+
+}
+
+const std::vector<RepositoryHandle>& CMakeGenerator::Repositories()
+{
+	return m_Properties.repositories;
+}
+
+CmakeGeneratorProperties& CMakeGenerator::Settings()
+{
+	return m_Properties;
 }
 
 void CMakeGenerator::ShowPopupForRepo(RepositoryHandle& repo)
@@ -369,7 +412,18 @@ void CMakeGenerator::AddExecutableAndSetDetails(std::string& stringToAdd)
 
 void TargetGenerator::ShowWidgets()
 {
-	if (ImGui::BeginTable(("TargetTableFor" + HelperFunctions::HashPtr(this)).c_str(), 2, ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_BordersInner)) {
+	if (ImGui::BeginTable(("TargetTableFor" + HelperFunctions::GenerateStringHash(this)).c_str(), 2, ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_BordersInner)) {
+		
+		ImGui::TableNextColumn();
+		
+		ImGui::Text("Target name");
+
+		ImGui::TableNextColumn();
+
+		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+		ImGui::InputText("##",&this->name);
+
+		ImGui::TableNextColumn();
 
 		ImGui::Text("C++ Standard");
 
@@ -399,19 +453,73 @@ void TargetGenerator::ShowWidgets()
 		}
 		ImGui::TableNextColumn();
 
-		ImGui::Text("Source Files*");
-
-		ImGui::TableNextColumn();
+		ImGui::Text("Source Files");
 
 		ImGui::TableNextColumn();
 
 		ImGui::InputTextMultiline("##SourceFilesMultiline", &sourceFiles, ImVec2(ImGui::GetContentRegionAvail().x, 0));
 
 		ImGui::TableNextColumn();
+		
+		ImGui::Text("Includes");
 
 		ImGui::TableNextColumn();
 
-		
+		ImGui::InputTextMultiline("##includesFilesMultiline", &includes, ImVec2(ImGui::GetContentRegionAvail().x, 0));
+
+		ImGui::TableNextColumn();
+
+		ImGui::Text("Libraries");
+
+		ImGui::TableNextColumn();
+
+		ImGui::InputTextMultiline("##LibraryFilesMultiline", &libraries, ImVec2(ImGui::GetContentRegionAvail().x, 0));
+
+		ImGui::TableNextColumn();
+
+		ImGui::Text("External Repositories");
+
+		ImGui::TableNextColumn();
+
+		if (CMakeGenerator::Repositories().size() > 0) {
+
+			//ImGui::BeginChild(("ChildWindowForRepos##" + HelperFunctions::GenerateStringHash(this)).c_str(),ImVec2(ImGui::GetContentRegionAvail().x,0));
+
+			if (ImGui::BeginTable(("TableForRepos##" + HelperFunctions::GenerateStringHash(this)).c_str(), 1, ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_BordersOuter)) {
+
+
+				for (auto& repo : CMakeGenerator::Repositories()) {
+					ImGui::TableNextColumn();
+
+					if (!repo) {
+						continue;
+					}
+					auto repoIt = std::find(this->externalRepos.begin(), this->externalRepos.end(), repo);
+					bool check = (repoIt != this->externalRepos.end());
+					if (ImGui::Checkbox(("##RepoCheckbox" + HelperFunctions::GenerateStringHash(this)).c_str(), &check)) {
+						if (!check) {
+							externalRepos.erase(repoIt);
+						}
+						else {
+							externalRepos.emplace_back().WatchPointer(repo);
+						}
+					}
+
+					ImGui::SameLine();
+
+					ImGui::Text((repo.Get()->GetAlias() + " ( " 
+					+ std::to_string(repo.Get()->GetNumberOf("sources")) + " source file" + (repo.Get()->GetNumberOf("sources") == 1? "": "s") + ", "
+					+ std::to_string(repo.Get()->GetNumberOf("includes")) + " include" + (repo.Get()->GetNumberOf("includes") == 1 ? "" : "s") + ", "
+					+ std::to_string(repo.Get()->GetNumberOf("libraries")) + " librar" + (repo.Get()->GetNumberOf("libraries") == 1 ? "y" : "ies")  + " )"
+					).c_str());
+
+				}
+
+				ImGui::EndTable();
+			}
+
+			//ImGui::EndChild();
+		}
 
 		ImGui::EndTable();
 	}
