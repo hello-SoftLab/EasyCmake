@@ -2,16 +2,16 @@
 #include "settings_descriptor.h"
 
 
-class LibrarySettings : public SettingsDescriptor {
 
+struct LibrarySettings {
 
+	std::string path = "";
+	std::string debugPostfix = "";
+	std::string access = "PUBLIC";
 
-private:
-	std::string m_Path = "";
-	std::string m_DebugPostfix = "";
+	static void ShowWidgets(std::vector<LibrarySettings>& libraries);
 
 };
-
 
 
 

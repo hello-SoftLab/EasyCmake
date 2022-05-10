@@ -3,8 +3,10 @@
 
 
 
-class IncludeSettings : public SettingsDescriptor {
+struct IncludeSettings {
+	std::string path;
+	std::string access;
 
-private:
+	static void ShowWidgets(std::vector<IncludeSettings>& includes);
 
 };

@@ -7,7 +7,7 @@ void CMakeGenerator::ShowMainWindow()
 {
 	ImGui::ShowDemoWindow();
 
-	ImGui::Begin("CmakeWindow",0,ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
+	ImGui::Begin("CmakeWindow",0,ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize );
 
 	ImGui::BeginChild("CmakeWindowNormalSettings",ImVec2(0,ImGui::GetContentRegionAvail().y - 25),true);
 
@@ -28,8 +28,6 @@ void CMakeGenerator::ShowMainWindow()
 			// auto-freeing memory
 			NFD::UniquePath outPath;
 
-			
-
 			nfdresult_t result = NFD::PickFolder(outPath,m_Properties.currentDirectory.c_str());
 
 			if (result == NFD_OKAY) {
@@ -48,6 +46,7 @@ void CMakeGenerator::ShowMainWindow()
 
 		ImGui::TableNextColumn();
 
+		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
 		ImGui::Text("Cmake version");
 
 		ImGui::TableNextColumn();
@@ -128,6 +127,7 @@ void CMakeGenerator::ShowMainWindow()
 	}
 
 	
+	ImGui::Text("Targets:");
 
 	if (ImGui::BeginTabBar("TargetsTabBar", ImGuiTabBarFlags_Reorderable)) {
 		int index = 1;
@@ -189,10 +189,7 @@ void CMakeGenerator::ShowMainWindow()
 	}
 
 	ValidateRepos();
-
-	//ImGui::ShowDemoWindow();
-
-
+	
 	ImGui::End();
 
 
@@ -234,11 +231,12 @@ void CMakeGenerator::ShowPopupForRepo(RepositoryHandle& repo)
 	
 	bool shouldOpenErrorPopup = false;
 	static std::string errorMsg = "";
-
+	
 	if (ImGui::Begin(("Repository Settings" + hash).c_str(), &repo.Get()->m_ShouldOpenPopup,ImGuiWindowFlags_AlwaysAutoResize)) {
 
 		ImGui::BeginChild(("ChildWindowForPopupRepo" + hash).c_str(),ImVec2(0,500));
 
+		
 		if(ImGui::BeginTable(("InitialTableForRepoPopup" + hash).c_str(),2,ImGuiTableFlags_BordersInner | ImGuiTableFlags_SizingStretchSame)) {
 			
 			ImGui::TableNextColumn();
@@ -505,7 +503,7 @@ void TargetGenerator::ShowWidgets()
 
 				const bool is_selected = this->type == item;
 
-				if (ImGui::Selectable(item, &is_selected)) {
+				if (ImGui::Selectable(item, is_selected)) {
 					this->type = item;
 				}
 
@@ -561,7 +559,7 @@ void TargetGenerator::ShowWidgets()
 
 		ImGui::TableNextColumn();
 
-		ImGui::InputTextMultiline("##includesFilesMultiline", &includes, ImVec2(ImGui::GetContentRegionAvail().x, 0));
+		IncludeSettings::ShowWidgets(includes);
 
 		ImGui::TableNextColumn();
 
@@ -569,8 +567,7 @@ void TargetGenerator::ShowWidgets()
 
 		ImGui::TableNextColumn();
 
-		ImGui::InputTextMultiline("##LibraryFilesMultiline", &libraries, ImVec2(ImGui::GetContentRegionAvail().x, 0));
-
+		LibrarySettings::ShowWidgets(this->libraries);
 
 		if (CMakeGenerator::Repositories().size() > 0) {
 
@@ -580,7 +577,7 @@ void TargetGenerator::ShowWidgets()
 
 			ImGui::TableNextColumn();
 			
-			if (ImGui::BeginTable(("TableForRepos##" + HelperFunctions::GenerateStringHash(this)).c_str(), 1, ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_BordersOuter)) {
+			if (ImGui::BeginTable(("TableForRepos##" + HelperFunctions::GenerateStringHash(this)).c_str(), 1, ImGuiTableFlags_SizingStretchProp )) {
 
 
 				for (auto& repo : CMakeGenerator::Repositories()) {

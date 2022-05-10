@@ -46,8 +46,7 @@ void ExternalRepository::SetupPopupWidgets()
 
 		ImGui::TableNextColumn();
 
-		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-		ImGui::InputTextMultiline(("##includes" + GetHash()).c_str(), &m_IncludePaths);
+		IncludeSettings::ShowWidgets(m_Includes);
 
 		ImGui::TableNextColumn();
 
@@ -55,8 +54,7 @@ void ExternalRepository::SetupPopupWidgets()
 
 		ImGui::TableNextColumn();
 
-		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-		ImGui::InputTextMultiline(("##libraries" + GetHash()).c_str(), &m_Libraries);
+		LibrarySettings::ShowWidgets(this->m_Libraries);
 
 		ImGui::TableNextColumn();
 
@@ -79,10 +77,10 @@ size_t ExternalRepository::GetNumberOf(std::string name)
 		return HelperFunctions::SplitString(m_SourcesToAdd, "\n").size();
 	}
 	if (name == "includes") {
-		return HelperFunctions::SplitString(m_IncludePaths, "\n").size();
+		return m_Includes.size();
 	}
 	if (name == "libraries") {
-		return HelperFunctions::SplitString(m_Libraries, "\n").size();
+		return m_Libraries.size();
 	}
 
 	return 0;

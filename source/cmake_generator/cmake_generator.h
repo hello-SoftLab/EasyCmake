@@ -11,8 +11,8 @@ struct TargetGenerator {
 	std::string type = "Executable";
 	std::string sourceFiles = "";
 	std::string cppStandard = "C++20";
-	std::string includes = "";
-	std::string libraries = "";
+	std::vector<IncludeSettings> includes;
+	std::vector<LibrarySettings> libraries;
 	std::vector<RepositoryHandle> externalRepos;
 
 	void ShowWidgets();

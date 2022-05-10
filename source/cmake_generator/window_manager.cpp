@@ -64,7 +64,7 @@ void WindowManager::SetupAdvancedWindow()
 	//ImGui::DockSpace(id);
 
 	ImGui::DockBuilderRemoveNode(id);
-	ImGui::DockBuilderAddNode(id, ImGuiDockNodeFlags_PassthruCentralNode);
+	ImGui::DockBuilderAddNode(id, ImGuiDockNodeFlags_PassthruCentralNode );
 
 	ImGui::DockBuilderSetNodeSize(id, ImGui::GetMainViewport()->WorkSize);
 	ImGui::DockBuilderSetNodePos(id, ImGui::GetMainViewport()->WorkPos);
