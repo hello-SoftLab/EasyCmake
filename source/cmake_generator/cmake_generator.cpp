@@ -186,6 +186,18 @@ CmakeGeneratorProperties& CMakeGenerator::Settings()
 	return m_Properties;
 }
 
+
+
+bool CMakeGenerator::FindAliasInRepositories(std::string alias)
+{
+	for (auto& repo : Repositories()) {
+		if (!repo) {
+			continue;
+		}
+	}
+	return false;
+}
+
 void CMakeGenerator::ShowPopupForRepo(RepositoryHandle& repo)
 {
 	if (!repo) {
@@ -198,6 +210,9 @@ void CMakeGenerator::ShowPopupForRepo(RepositoryHandle& repo)
 
 	std::string hash = repo.Get()->GetHash();
 	
+	bool shouldOpenErrorPopup = false;
+	static std::string errorMsg = "";
+
 	if (ImGui::Begin(("Repository Settings" + hash).c_str(), &repo.Get()->m_ShouldOpenPopup,ImGuiWindowFlags_AlwaysAutoResize)) {
 
 		ImGui::BeginChild(("ChildWindowForPopupRepo" + hash).c_str(),ImVec2(0,500));
@@ -234,12 +249,17 @@ void CMakeGenerator::ShowPopupForRepo(RepositoryHandle& repo)
 			
 			
 			if (ImGui::Button("Ok",ImVec2(ImGui::GetContentRegionAvail().x,0))) {
-				repo.Get()->ClosePopup();
-				if (repo == m_Properties.tempRepo) {
-					RepositoryHandle& newRepo = m_Properties.repositories.emplace_back();
-					newRepo = repo;
-					m_Properties.tempRepo.ClearCurrentType();
-					
+				if (!repo.Get()->CheckRepoValidity(errorMsg)) {
+					shouldOpenErrorPopup = true;
+				}
+				else {
+					repo.Get()->ClosePopup();
+					if (repo == m_Properties.tempRepo) {
+						RepositoryHandle& newRepo = m_Properties.repositories.emplace_back();
+						newRepo = repo;
+						m_Properties.tempRepo.ClearCurrentType();
+
+					}
 				}
 			}
 
@@ -256,11 +276,33 @@ void CMakeGenerator::ShowPopupForRepo(RepositoryHandle& repo)
 
 			ImGui::TableNextColumn();
 
+			
 
 			ImGui::EndTable();
 		}
 
 	}
+
+	if (shouldOpenErrorPopup) {
+		ImGui::OpenPopup(("Error##" + HelperFunctions::GenerateStringHash(&repo)).c_str());
+		shouldOpenErrorPopup = false;
+	}
+	
+	bool isPopupOpen = true;
+	if (ImGui::BeginPopupModal(("Error##" + HelperFunctions::GenerateStringHash(&repo)).c_str(),&isPopupOpen,ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize)) {
+		ImGui::Text(errorMsg.c_str());
+
+		if (ImGui::Button("Ok")) {
+			ImGui::CloseCurrentPopup();
+		}
+
+		ImGui::EndPopup();
+	}
+
+	if (!isPopupOpen) {
+		ImGui::CloseCurrentPopup();
+	}
+
 	ImGui::End();
 }
 
@@ -483,8 +525,7 @@ void TargetGenerator::ShowWidgets()
 
 		if (CMakeGenerator::Repositories().size() > 0) {
 
-			//ImGui::BeginChild(("ChildWindowForRepos##" + HelperFunctions::GenerateStringHash(this)).c_str(),ImVec2(ImGui::GetContentRegionAvail().x,0));
-
+			
 			if (ImGui::BeginTable(("TableForRepos##" + HelperFunctions::GenerateStringHash(this)).c_str(), 1, ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_BordersOuter)) {
 
 
@@ -518,7 +559,7 @@ void TargetGenerator::ShowWidgets()
 				ImGui::EndTable();
 			}
 
-			//ImGui::EndChild();
+			
 		}
 
 		ImGui::EndTable();

@@ -21,5 +21,7 @@ private:
  
 	void SetupPopupWidgets() override;
 	size_t GetNumberOf(std::string name) override;
+	bool IsRepoReady(std::string& errorMsg) override;
+	bool CheckIfLocationAlreadyRegistered();
 
 };

@@ -48,7 +48,12 @@ public:
 	}
 
 	template<typename T>
-	T* GetAs() {
+	bool IsHoldingType() const {
+		return m_CurrentType == HelperFunctions::GetClassName<T>();
+	}
+
+	template<typename T>
+	T* GetAs() const {
 		if (std::holds_alternative< std::shared_ptr<Derived>>(m_Pointer)) {
 			return (T*)std::get<std::shared_ptr<Derived>>(m_Pointer).get();
 		}

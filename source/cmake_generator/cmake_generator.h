@@ -31,6 +31,7 @@ struct CmakeGeneratorProperties {
 class CMakeGenerator {
 public:
 
+	static bool FindAliasInRepositories(std::string alias);
 	static const std::vector<RepositoryHandle>& Repositories();
 	static CmakeGeneratorProperties& Settings();
 	static void ShowMainWindow();

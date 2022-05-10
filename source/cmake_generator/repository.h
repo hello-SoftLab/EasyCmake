@@ -9,6 +9,7 @@ public:
 	Repository();
 
 	virtual void SetupPopupWidgets();
+	bool CheckRepoValidity(std::string& errorMsg);
 
 	virtual size_t GetNumberOf(std::string type);
 
@@ -28,6 +29,7 @@ public:
 	std::string GetAlias();
 
 protected:
+	virtual bool IsRepoReady(std::string& errorMsg);
 
 	std::string m_Alias = "";
 private:

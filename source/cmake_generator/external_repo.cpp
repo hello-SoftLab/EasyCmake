@@ -1,4 +1,5 @@
 #include "external_repo.h"
+#include "cmake_generator.h"
 
 void ExternalRepository::SetupPopupWidgets()
 {
@@ -85,4 +86,36 @@ size_t ExternalRepository::GetNumberOf(std::string name)
 	}
 
 	return 0;
+}
+
+bool ExternalRepository::IsRepoReady(std::string& errorMsg)
+{
+	if (m_RepoLocation == "") {
+		errorMsg = "Please provide repository github location!";
+		return false;
+	}
+
+	if (CheckIfLocationAlreadyRegistered()) {
+		errorMsg = "Repository location '" + this->m_RepoLocation + "' was already registered!\nPlease choose another location.";
+		return false;
+	}
+	return true;
+}
+
+bool ExternalRepository::CheckIfLocationAlreadyRegistered()
+{
+	for (auto& repo : CMakeGenerator::Repositories()) {
+		if (!repo) {
+			continue;
+		}
+		if (!repo.IsHoldingType<ExternalRepository>()) {
+			continue;
+		}
+
+		if (repo.GetAs<ExternalRepository>()->m_RepoLocation == this->m_RepoLocation) {
+			return true;
+		}
+		
+	}
+	return false;
 }

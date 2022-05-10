@@ -1,5 +1,5 @@
 #include "repository.h"
-
+#include "cmake_generator.h"
 
 
 Repository::Repository()
@@ -10,6 +10,27 @@ Repository::Repository()
 
 void Repository::SetupPopupWidgets()
 {
+}
+
+bool Repository::CheckRepoValidity(std::string& errorMsg)
+{
+
+	if (m_Alias == "") {
+		errorMsg = "Please add a valid alias to the repository!";
+		return false;
+	}
+
+	if (CMakeGenerator::FindAliasInRepositories(m_Alias)) {
+		errorMsg = "Alias " + m_Alias + " already exists!\nPlease choose another name for your repository.";
+		return false;
+	}
+
+	return this->IsRepoReady(errorMsg);
+}
+
+bool Repository::IsRepoReady(std::string& errorMsg)
+{
+	return false;
 }
 
 size_t Repository::GetNumberOf(std::string type)
