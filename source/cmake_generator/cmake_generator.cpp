@@ -1,6 +1,7 @@
 #include "cmake_generator.h"
 #include "external_repo.h"
 #include <format>
+#include "../../vendor/dialog/include/nfd.hpp"
 
 void CMakeGenerator::ShowMainWindow()
 {
@@ -21,7 +22,19 @@ void CMakeGenerator::ShowMainWindow()
 		ImGui::TableNextColumn();
 
 		if (ImGui::Button("Modify",ImVec2(ImGui::GetContentRegionAvail().x,0))) {
+			// initialize NFD
+			NFD::Guard nfdGuard;
 
+			// auto-freeing memory
+			NFD::UniquePath outPath;
+
+			
+
+			nfdresult_t result = NFD::PickFolder(outPath,m_Properties.currentDirectory.c_str());
+
+			if (result == NFD_OKAY) {
+				m_Properties.currentDirectory = outPath.get();
+			}
 		}
 
 		ImGui::TableNextColumn();
@@ -34,7 +47,16 @@ void CMakeGenerator::ShowMainWindow()
 		ImGui::InputText("##ProjectNameInput", &m_Properties.projectName);
 
 		ImGui::TableNextColumn();
+
+		ImGui::Text("Cmake version");
+
+		ImGui::TableNextColumn();
+
+		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+		ImGui::InputText("##", &m_Properties.cmakeVersion);
 		
+		ImGui::TableNextColumn();
+
 		ImGui::Text("External Repositories");
 
 		ImGui::TableNextColumn();
@@ -462,8 +484,40 @@ void TargetGenerator::ShowWidgets()
 
 		ImGui::TableNextColumn();
 
+
 		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
 		ImGui::InputText("##",&this->name);
+
+
+		ImGui::TableNextColumn();
+
+		ImGui::Text("Target Type");
+
+		ImGui::TableNextColumn();
+
+
+		std::vector<const char*> values = {"Executable","Library"};
+		
+
+		if (ImGui::BeginCombo(("##Combo" + HelperFunctions::GenerateStringHash(this)).c_str(), this->type.c_str())) {
+
+			for (auto& item : values) {
+
+				const bool is_selected = this->type == item;
+
+				if (ImGui::Selectable(item, &is_selected)) {
+					this->type = item;
+				}
+
+				if (is_selected) {
+					ImGui::SetItemDefaultFocus();
+				}
+
+			}
+
+
+			ImGui::EndCombo();
+		}
 
 		ImGui::TableNextColumn();
 
@@ -517,14 +571,14 @@ void TargetGenerator::ShowWidgets()
 
 		ImGui::InputTextMultiline("##LibraryFilesMultiline", &libraries, ImVec2(ImGui::GetContentRegionAvail().x, 0));
 
-		ImGui::TableNextColumn();
-
-		ImGui::Text("External Repositories");
-
-		ImGui::TableNextColumn();
 
 		if (CMakeGenerator::Repositories().size() > 0) {
 
+			ImGui::TableNextColumn();
+
+			ImGui::Text("External Repositories");
+
+			ImGui::TableNextColumn();
 			
 			if (ImGui::BeginTable(("TableForRepos##" + HelperFunctions::GenerateStringHash(this)).c_str(), 1, ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_BordersOuter)) {
 

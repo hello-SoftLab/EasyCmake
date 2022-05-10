@@ -8,7 +8,7 @@
 
 struct TargetGenerator {
 	std::string name = "";
-	bool isLibrary = false;
+	std::string type = "Executable";
 	std::string sourceFiles = "";
 	std::string cppStandard = "C++20";
 	std::string includes = "";
@@ -21,8 +21,8 @@ struct TargetGenerator {
 
 struct CmakeGeneratorProperties {
 	std::string currentDirectory = std::filesystem::current_path().lexically_normal().string();
-	bool shouldCreateLibrary = false;
 	std::string projectName = "";
+	std::string cmakeVersion = "";
 	std::vector<PointerHolder<TargetGenerator>> targets;
 	std::vector<RepositoryHandle> repositories;
 	RepositoryHandle tempRepo;
