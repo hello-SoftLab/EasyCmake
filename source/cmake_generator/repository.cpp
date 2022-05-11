@@ -38,6 +38,11 @@ size_t Repository::GetNumberOf(std::string type)
 	return 0;
 }
 
+std::string Repository::GetCMakeListsString()
+{
+	return std::string();
+}
+
 void Repository::OpenPopup()
 {
 	m_ShouldOpenPopup = true;

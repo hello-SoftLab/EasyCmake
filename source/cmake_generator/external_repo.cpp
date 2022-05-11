@@ -71,6 +71,20 @@ void ExternalRepository::SetupPopupWidgets()
 	
 }
 
+std::string ExternalRepository::GetCMakeArgs()
+{
+	std::string returnStr = "";
+	returnStr += R"(
+		CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=${PROJECT_SOURCE_DIR}/vendor/)" + fmt::format("{}",m_Alias) + R"(
+				   -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}\n)";
+	for (auto& arg : HelperFunctions::SplitString(m_CmakeArgs, "\n")) {
+		returnStr += R"(
+				   -D)" + fmt::format("{}\n",arg);
+	}
+
+	return returnStr;
+}
+
 size_t ExternalRepository::GetNumberOf(std::string name)
 {
 	if (name == "sources") {
@@ -84,6 +98,56 @@ size_t ExternalRepository::GetNumberOf(std::string name)
 	}
 
 	return 0;
+}
+
+std::string ExternalRepository::GetCMakeListsString()
+{
+	std::string stringToAdd = "";
+
+	stringToAdd += R"(
+#repository download and settings for alias)" + fmt::format("{}...\n\n",this->m_Alias);
+
+	stringToAdd += R"(
+	dir_exists()" + fmt::format("{}_exists ", this->m_Alias) + "${PROJECT_SOURCE_DIR}/vendor/" + fmt::format("{})\n\n", m_Alias);
+
+	stringToAdd += R"(
+	if(NOT ${)" + fmt::format("{}_exists})\n",m_Alias);
+
+	if (m_ShouldBuild) {
+		stringToAdd += R"(
+		ExternalProject_Add()" + fmt::format("{}\n", m_Alias) + R"(
+			GIT_REPOSITORY )" + fmt::format("{}\n", m_RepoLocation) + R"(
+			GIT_TAG )" + fmt::format("{}\n", m_GitTag) + GetCMakeArgs();
+		if (m_Libraries.size() > 0) {
+			for (auto& lib : m_Libraries) {
+				stringToAdd += R"(
+			BUILD_BYPRODUCTS ${PROJECT_SOURCE_DIR}/vendor)" + fmt::format("{}/", m_Alias) + "lib/${CMAKE_STATIC_LIBRARY_PREFIX}" +
+					fmt::format("{}$<$<CONFIG:Debug>:{}",lib.path,lib.debugPostfix) + "${CMAKE_STATIC_LIBRARY_SUFFIX}\n";
+			}
+		}
+		stringToAdd += R"(
+		)
+		
+		list(APPEND ${PROJECT_NAME}_DEPENDENCIES_TO_BUILD )" + fmt::format("{})",m_Alias) + R"(
+
+	endif()
+
+)";
+	}
+	else {
+		stringToAdd += R"(
+		FetchContent_Declare()" + fmt::format("{}\n", m_Alias) + R"(
+			GIT_REPOSITORY )" + fmt::format("{}\n", m_RepoLocation) + R"(
+			GIT_TAG )" + fmt::format("{}\n",m_GitTag) + R"(
+			SOURCE_DIR ${PROJECT_SOURCE_DIR}/vendor/)" + fmt::format("{}\n",m_Alias) + R"(
+		)
+		FetchContent_MakeAvailable()" + fmt::format("{})",m_Alias) + R"(
+	endif()
+
+)";
+	}
+
+	return stringToAdd;
 }
 
 bool ExternalRepository::IsRepoReady(std::string& errorMsg)

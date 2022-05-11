@@ -19,6 +19,8 @@ private:
 	std::vector<LibrarySettings> m_Libraries;
 	std::string m_CmakeArgs = "";
  
+	std::string GetCMakeArgs();
+	std::string GetCMakeListsString() override;
 	void SetupPopupWidgets() override;
 	size_t GetNumberOf(std::string name) override;
 	bool IsRepoReady(std::string& errorMsg) override;

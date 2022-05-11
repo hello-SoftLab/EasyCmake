@@ -2,6 +2,7 @@
 #include "external_repo.h"
 #include <format>
 #include "../../vendor/dialog/include/nfd.hpp"
+#include "cmake_serializer.h"
 
 void CMakeGenerator::ShowMainWindow()
 {
@@ -167,7 +168,7 @@ void CMakeGenerator::ShowMainWindow()
 
 	if (ImGui::Button("Generate")) {
 		if (ValidateInputs()) {
-			GenerateCMakeLists();
+			CMakeSerializer::GenerateCMakeLists(m_Properties);
 		}
 	}
 
@@ -360,28 +361,6 @@ void CMakeGenerator::ShowRepoCreateMenu()
 	}
 }
 
-void CMakeGenerator::GenerateCMakeLists()
-{
-	std::string textFile = "";
-	
-	AddInitialDetails(textFile);
-	/*
-	if (m_Properties.sourceFiles != "") {
-		AddSourceFiles(textFile);
-
-		AddExecutableAndSetDetails(textFile);
-
-		AddIncludeDirectories(textFile);
-	}
-	*/
-
-	
-
-
-	std::cout << textFile << std::endl;
-	
-}
-
 bool CMakeGenerator::ValidateInputs()
 {
 	if (m_Properties.projectName == "") {
@@ -390,87 +369,9 @@ bool CMakeGenerator::ValidateInputs()
 	return true;
 }
 
-void CMakeGenerator::AddSourceFiles(std::string& stringToAdd)
-{
-	stringToAdd += R"(
-
-#adding general source files
-)";
-	/*
-	for (auto& filePath : HelperFunctions::SplitString(m_Properties.sourceFiles, "\n")) {
-		stringToAdd += R"(
-list(APPEND ${PROJECT_NAME}_SOURCE_FILES ${PROJECT_SOURCE_DIR}/)";
-		stringToAdd += fmt::format("{}\n", filePath);
-
-	}  ADD LATER
-	*/
-}
-
-void CMakeGenerator::AddIncludeDirectories(std::string& stringToAdd)
-{
-
-	
-
-}
-
-void CMakeGenerator::AddInitialDetails(std::string& stringToAdd)
-{
-	stringToAdd += R"(
-
-#this CMakeLists was created with EasyCmake - V2 
-#the repository can be found at https://github.com/knz13/EasyCmake_Cpp
-
-#adding useful functions
-
-function(DIR_EXISTS variable dir_path)
-
-file(GLOB ${variable}_check ${dir_path}/*)
-
-list(LENGTH ${variable}_check ${variable}_len)
-
-if(${${variable}_len} EQUAL 0)
-
-set(${variable} FALSE PARENT_SCOPE)
-
-else()
-
-set(${variable} TRUE PARENT_SCOPE)
-
-endif()
-
-endfunction()
-
-#adding extra cmake libs
-include(GNUInstallDirs)
-include(ExternalProject)
-include(FetchContent)
 
 
-#project name
-)";
 
-	stringToAdd += fmt::format(R"(project("{}"))", m_Properties.projectName).c_str();
-
-	stringToAdd += R"(
-#creating variables for ease of adding libraries
-set(${PROJECT_NAME}_SOURCE_FILES)
-)";
-
-	if (m_Properties.repositories.size() > 0) {
-		stringToAdd += "set(${PROJECT_NAME}_DEPS_TO_BUILD)\n";
-		stringToAdd += "set(${ PROJECT_NAME }_LIBRARIES)\n";
-		stringToAdd += "set(${PROJECT_NAME}_INCLUDES)\n\n\n";
-	}
-
-
-}
-
-void CMakeGenerator::AddExecutableAndSetDetails(std::string& stringToAdd)
-{
-	
-	
-
-}
 
 void TargetGenerator::ShowWidgets()
 {
