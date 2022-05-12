@@ -111,7 +111,7 @@ std::string ExternalRepository::GetCMakeListsString()
 	dir_exists()" + fmt::format("{}_exists ", this->m_Alias) + "${PROJECT_SOURCE_DIR}/vendor/" + fmt::format("{})\n\n", m_Alias);
 
 	stringToAdd += R"(
-	if(NOT ${)" + fmt::format("{}_exists})\n",m_Alias);
+	if(NOT ${)" + fmt::format("{}_exists",m_Alias) + "})\n";
 
 	if (m_ShouldBuild) {
 		stringToAdd += R"(
@@ -150,15 +150,15 @@ std::string ExternalRepository::GetCMakeListsString()
 	return stringToAdd;
 }
 
-bool ExternalRepository::IsRepoReady(std::string& errorMsg)
+bool ExternalRepository::IsRepoReady()
 {
 	if (m_RepoLocation == "") {
-		errorMsg = "Please provide repository github location!";
+		CMakeGenerator::ShowErrorPopup("Please provide repository github location!");
 		return false;
 	}
 
 	if (CheckIfLocationAlreadyRegistered()) {
-		errorMsg = "Repository location '" + this->m_RepoLocation + "' was already registered!\nPlease choose another location.";
+		CMakeGenerator::ShowErrorPopup("Repository location '" + this->m_RepoLocation + "' was already registered!\nPlease choose another location.");
 		return false;
 	}
 	return true;

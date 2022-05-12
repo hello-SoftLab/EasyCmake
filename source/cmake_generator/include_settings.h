@@ -4,8 +4,8 @@
 
 
 struct IncludeSettings {
-	std::string path;
-	std::string access;
+	std::string path = "";
+	std::string access = "PUBLIC";
 
 	static void ShowWidgets(std::vector<IncludeSettings>& includes);
 

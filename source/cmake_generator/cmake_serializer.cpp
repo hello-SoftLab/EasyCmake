@@ -1,4 +1,7 @@
 #include "cmake_serializer.h"
+#include "external_repo.h"
+#include <fstream>
+
 
 bool CMakeSerializer::GenerateCMakeLists(const CmakeGeneratorProperties& prop)
 {
@@ -8,6 +11,13 @@ bool CMakeSerializer::GenerateCMakeLists(const CmakeGeneratorProperties& prop)
 
 #this CMakeLists was created with EasyCmake - V2 
 #the repository can be found at https://github.com/knz13/EasyCmake_Cpp
+
+)";
+
+	stringToAdd += R"(
+cmake_minimum_required(VERSION )" + fmt::format("{})\n\n", prop.cmakeVersion);
+
+	stringToAdd += R"(
 
 #adding useful functions
 
@@ -34,23 +44,191 @@ include(GNUInstallDirs)
 include(ExternalProject)
 include(FetchContent)
 
-set(${PROJECT_NAME}_DEPENDENCIES_TO_BUILD)
-
-
 #project name
 )";
 
-	stringToAdd += fmt::format(R"(project("{}"))", prop.projectName).c_str();
 
-	for (auto& repo : prop.repositories) {
-		if (!repo) {
-			continue;
+
+	stringToAdd += fmt::format(R"(project("{}")\n)", prop.projectName).c_str();
+
+
+	if (prop.subdirectories.size() > 0) {
+		stringToAdd += R"(
+#adding subdirectories...
+)";
+
+		for (auto& subdir : prop.subdirectories) {
+
+			stringToAdd += fmt::format(R"(
+add_subdirectory({})
+)", subdir.subdir);
+
 		}
-		stringToAdd += repo.Get()->GetCMakeListsString();
+
+		stringToAdd += "\n";
 	}
 
 
+	if (prop.repositories.size() > 0) {
 
+		stringToAdd += R"(
+# --------------------- Repository declarations ------------------------
+
+)";
+
+
+
+		for (auto& repo : prop.repositories) {
+			if (!repo) {
+				continue;
+			}
+			stringToAdd += repo.Get()->GetCMakeListsString();
+		}
+	}
+
+	
+	for (auto& target : prop.targets) {
+
+		if (!target) {
+			continue;
+		}
+
+		if (target.Get()->type == "Library") {
+			stringToAdd += R"(
+#creating library
+add_library()" + fmt::format("{}\n", target.Get()->name);
+		}
+
+		if (target.Get()->type == "Executable") {
+			stringToAdd += R"(
+#creating executable
+add_executable()" + fmt::format("{}\n\n",target.Get()->name);
+		}
+
+		for (auto& location : HelperFunctions::SplitString(target.Get()->sourceFiles, "\n")) {
+			stringToAdd += R"(
+	${PROJECT_SOURCE_DIR}/)" + fmt::format("{}\n",location);
+		}
+
+		std::vector<std::string> externalRepoCount;
+		std::vector<std::pair<std::string,LibrarySettings>> externalRepoLibraries;
+		std::vector<std::pair<std::string, IncludeSettings>> externalRepoIncludes;
+		
+		for (auto& repo : target.Get()->externalRepos) {
+			if (!repo) {
+				continue;
+			}
+			for (auto& location : repo.Get()->GetSources()) {
+				stringToAdd += R"(
+	${PROJECT_SOURCE_DIR}/vendor/)" + fmt::format("{}/",repo.Get()->GetAlias()) + fmt::format("{}",location);
+			}
+			if (repo.Get()->GetLibraries().size() > 0) {
+				for (auto& library : repo.Get()->GetLibraries()) {
+					externalRepoLibraries.push_back(std::make_pair(repo.Get()->GetAlias(),library));
+				}
+			}
+
+			if (repo.Get()->GetIncludes().size() > 0) {
+				for (auto& include : repo.Get()->GetIncludes()) {
+					externalRepoIncludes.push_back(std::make_pair(repo.Get()->GetAlias(),include));
+				}
+
+				
+			}
+
+
+			if (repo.IsHoldingType<ExternalRepository>()) {
+				externalRepoCount.push_back(repo.Get()->GetAlias());
+			}
+		}
+
+		stringToAdd += R"(
+)
+
+set_property(TARGET )" + fmt::format("{}", target.Get()->name) + R"( PROPERTY CXX_STANDARD )" + fmt::format("{})\n\n", target.Get()->cppStandard.substr(3));
+
+		
+		if (externalRepoCount.size() > 0) {
+			stringToAdd += R"(
+#setting dependencies...
+
+)";
+
+			for (auto& dep : externalRepoCount) {
+				stringToAdd += R"(
+add_dependencies()" + fmt::format("{} ",target.Get()->name) + fmt::format("{})\n",dep);
+			}
+		}
+
+		if (target.Get()->libraries.size() > 0 || externalRepoLibraries.size() > 0) {
+			stringToAdd += R"(
+#adding libraries...
+
+)";
+
+			for (auto& library : target.Get()->libraries) {
+				stringToAdd += R"(
+target_link_libraries()" + fmt::format("{} ",target.Get()->name) + fmt::format("{} ",library.access);
+
+				if (library.isTargetName) {
+					stringToAdd += fmt::format("{})\n",library.path);
+				}
+				else{
+					stringToAdd += "${PROJECT_SOURCE_DIR}/" + fmt::format("{})\n", library.path);
+				}
+
+			}
+
+			for (auto& [name,library] : externalRepoLibraries) {
+				stringToAdd += R"(
+target_link_libraries()" + fmt::format("{} ", target.Get()->name) + fmt::format("{} ", library.access);
+
+				if (library.isTargetName) {
+					stringToAdd += fmt::format("{})\n", library.path);
+				}
+				else {
+					stringToAdd += "${PROJECT_SOURCE_DIR}/vendor/" + fmt::format("{}/",name) + fmt::format("{})\n", library.path);
+				}
+			}
+
+		}
+
+		if (target.Get()->includes.size() > 0 || externalRepoIncludes.size() > 0) {
+			stringToAdd += R"(
+
+#adding includes...
+
+)";
+
+			for (auto& include : target.Get()->includes) {
+				stringToAdd += R"(
+target_include_directories()" + fmt::format("{} ", target.Get()->name) + fmt::format("{} ", include.access) + R"(${PROJECT_SOURCE_DIR}/)" +
+	fmt::format("{})\n",include.path);
+			}
+
+			for (auto& [name,include] : externalRepoIncludes) {
+				stringToAdd += R"(
+target_include_directories()" + fmt::format("{} ", target.Get()->name) + fmt::format("{} ", include.access) + R"(${PROJECT_SOURCE_DIR}/vendor/)" +
+fmt::format("{}/",name) + fmt::format("{})\n", include.path);
+			}
+		}
+
+
+	};
+	std::string path = prop.currentDirectory;
+
+	path += "\\CMakeLists.txt";
+
+
+	std::ofstream stream(path);
+
+	if (!stream.is_open()) {
+		return false;
+	}
+
+	stream << stringToAdd;
+
+	stream.close();
 
 
 	return true;

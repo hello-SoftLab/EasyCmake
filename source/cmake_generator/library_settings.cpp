@@ -1,80 +1,69 @@
 #include "library_settings.h"
+#include "cmake_generator.h"
 
 void LibrarySettings::ShowWidgets(std::vector<LibrarySettings>& libraries)
 {
-	auto it = libraries.begin();
-	while (it != libraries.end()) {
-		auto& library = *it;
-		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - ImGui::CalcTextSize("AAAa").x);
-		ImGui::InputText(("##pathForLibrary" + HelperFunctions::GenerateStringHash(&library)).c_str(), &library.path);
+	CMakeGeneratorChangeableWidgetSetup setup(libraries);
 
-		if (ImGui::BeginPopupContextItem()) {
+	setup.mainTextStringFunc = [](LibrarySettings& lib) {return &lib.path; };
 
-			if (ImGui::BeginTable(("TableforLibrary##" + HelperFunctions::GenerateStringHash(&library)).c_str(), 2, ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_Borders)) {
+	setup.widgetsFunc = [](LibrarySettings& library) {
 
-				ImGui::TableNextColumn();
+		if (ImGui::BeginTable(("TableforLibrary##" + HelperFunctions::GenerateStringHash(&library)).c_str(), 2, ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_Borders)) {
 
-				ImGui::Text("Acess");
+			ImGui::TableNextColumn();
 
-				ImGui::TableNextColumn();
+			ImGui::Text("Acess");
 
-				std::vector<const char*> items = { "PUBLIC","PRIVATE" };
+			ImGui::TableNextColumn();
+
+			std::vector<const char*> items = { "PUBLIC","PRIVATE" };
 
 
-				ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-				if (ImGui::BeginCombo(("##comboForAcess" + HelperFunctions::GenerateStringHash(&library)).c_str(), library.access.c_str())) {
+			ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+			if (ImGui::BeginCombo(("##comboForAcess" + HelperFunctions::GenerateStringHash(&library)).c_str(), library.access.c_str())) {
 
-					for (auto& item : items) {
+				for (auto& item : items) {
 
-						const bool is_selected = item == library.access;
+					const bool is_selected = item == library.access;
 
-						if (ImGui::Selectable(item, is_selected)) {
-							library.access = item;
-						}
-						if (is_selected) {
-							ImGui::SetItemDefaultFocus();
-						}
-
-
+					if (ImGui::Selectable(item, is_selected)) {
+						library.access = item;
+					}
+					if (is_selected) {
+						ImGui::SetItemDefaultFocus();
 					}
 
-					ImGui::EndCombo();
+
 				}
 
-				ImGui::TableNextColumn();
-
-				ImGui::Text("Debug Postfix");
-
-				ImGui::TableNextColumn();
-
-				ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-				ImGui::InputText(("##dpostfixForLibrary" + HelperFunctions::GenerateStringHash(&library)).c_str(), &library.path);
-
-				ImGui::TableNextColumn();
-
-				
-				ImGui::EndTable();
-				
+				ImGui::EndCombo();
 			}
 
-			ImGui::EndPopup();
+			ImGui::TableNextColumn();
+
+			ImGui::Text("Debug Postfix");
+
+			ImGui::TableNextColumn();
+
+			ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+			ImGui::InputText(("##dpostfixForLibrary" + HelperFunctions::GenerateStringHash(&library)).c_str(), &library.debugPostfix);
+
+			ImGui::TableNextColumn();
+
+			ImGui::Text("Is Target Name");
+			
+			ImGui::TableNextColumn();
+
+			ImGui::Checkbox(("##checkboxForLibrary" + HelperFunctions::GenerateStringHash(&library)).c_str(),&library.isTargetName);
+
+			ImGui::EndTable();
+
 		}
-		
-		ImGui::SameLine();
 
-		if (ImGui::Button(("X##" + HelperFunctions::GenerateStringHash(&library)).c_str())) {
-			it = libraries.erase(it);
-			continue;
-		}
-		
-		it++;
+	};
 
+	CMakeGenerator::SetupChangeableWidgets(setup);
 
-	}
-	
-
-	if (ImGui::Button(("+##" + HelperFunctions::GenerateStringHash(&libraries)).c_str())) {
-		libraries.emplace_back();
-	}
 
 }

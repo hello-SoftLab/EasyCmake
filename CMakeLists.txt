@@ -359,6 +359,10 @@ list(APPEND ${PROJECT_NAME}_SOURCE_FILES ${PROJECT_SOURCE_DIR}/source/cmake_gene
 
 list(APPEND ${PROJECT_NAME}_SOURCE_FILES ${PROJECT_SOURCE_DIR}/source/cmake_generator/pointer_holder.cpp)
 
+list(APPEND ${PROJECT_NAME}_SOURCE_FILES ${PROJECT_SOURCE_DIR}/source/cmake_generator/cmake_serializer.cpp)
+
+list(APPEND ${PROJECT_NAME}_SOURCE_FILES ${PROJECT_SOURCE_DIR}/source/cmake_generator/subdirectory_settings.cpp)
+
 
 #creating executable
 add_executable(${PROJECT_NAME}

@@ -14,16 +14,13 @@ private:
 	std::string m_RepoLocation="";
 	std::string m_GitTag = "";
 	bool m_ShouldBuild = false;
-	std::string m_SourcesToAdd = "";
-	std::vector<IncludeSettings> m_Includes;
-	std::vector<LibrarySettings> m_Libraries;
 	std::string m_CmakeArgs = "";
  
 	std::string GetCMakeArgs();
 	std::string GetCMakeListsString() override;
 	void SetupPopupWidgets() override;
 	size_t GetNumberOf(std::string name) override;
-	bool IsRepoReady(std::string& errorMsg) override;
+	bool IsRepoReady() override;
 	bool CheckIfLocationAlreadyRegistered();
 
 };

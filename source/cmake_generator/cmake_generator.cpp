@@ -57,6 +57,14 @@ void CMakeGenerator::ShowMainWindow()
 		
 		ImGui::TableNextColumn();
 
+		ImGui::Text("Subdirectories");
+
+		ImGui::TableNextColumn();
+
+		SubdirectorySettings::ShowWidgets(m_Properties.subdirectories);
+
+		ImGui::TableNextColumn();
+
 		ImGui::Text("External Repositories");
 
 		ImGui::TableNextColumn();
@@ -190,6 +198,29 @@ void CMakeGenerator::ShowMainWindow()
 	}
 
 	ValidateRepos();
+
+
+	if (CMakeGenerator::m_ShouldShowErrorPopup) {
+		ImGui::OpenPopup(("Error##" + HelperFunctions::GenerateStringHash(&m_Properties)).c_str());
+		m_ShouldShowErrorPopup = false;
+	}
+
+	bool isPopupOpen = true;
+	if (ImGui::BeginPopupModal(("Error##" + HelperFunctions::GenerateStringHash(&m_Properties)).c_str(), &isPopupOpen, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize)) {
+		ImGui::Text(m_ErrorPopupMsg.c_str());
+
+		if (ImGui::Button("Ok")) {
+			ImGui::CloseCurrentPopup();
+		}
+
+		ImGui::EndPopup();
+	}
+
+	if (!isPopupOpen) {
+		ImGui::CloseCurrentPopup();
+	}
+
+
 	
 	ImGui::End();
 
@@ -207,6 +238,14 @@ CmakeGeneratorProperties& CMakeGenerator::Settings()
 }
 
 
+
+
+
+void CMakeGenerator::ShowErrorPopup(std::string errorMsg)
+{
+	m_ErrorPopupMsg = errorMsg;
+	m_ShouldShowErrorPopup = true;
+}
 
 bool CMakeGenerator::FindAliasInRepositories(std::string alias)
 {
@@ -230,8 +269,7 @@ void CMakeGenerator::ShowPopupForRepo(RepositoryHandle& repo)
 
 	std::string hash = repo.Get()->GetHash();
 	
-	bool shouldOpenErrorPopup = false;
-	static std::string errorMsg = "";
+	
 	
 	if (ImGui::Begin(("Repository Settings" + hash).c_str(), &repo.Get()->m_ShouldOpenPopup,ImGuiWindowFlags_AlwaysAutoResize)) {
 
@@ -270,16 +308,12 @@ void CMakeGenerator::ShowPopupForRepo(RepositoryHandle& repo)
 			
 			
 			if (ImGui::Button("Ok",ImVec2(ImGui::GetContentRegionAvail().x,0))) {
-				if (!repo.Get()->CheckRepoValidity(errorMsg)) {
-					shouldOpenErrorPopup = true;
-				}
-				else {
+				if (repo.Get()->CheckRepoValidity()) {
 					repo.Get()->ClosePopup();
 					if (repo == m_Properties.tempRepo) {
 						RepositoryHandle& newRepo = m_Properties.repositories.emplace_back();
 						newRepo = repo;
 						m_Properties.tempRepo.ClearCurrentType();
-
 					}
 				}
 			}
@@ -304,26 +338,7 @@ void CMakeGenerator::ShowPopupForRepo(RepositoryHandle& repo)
 
 	}
 
-	if (shouldOpenErrorPopup) {
-		ImGui::OpenPopup(("Error##" + HelperFunctions::GenerateStringHash(&repo)).c_str());
-		shouldOpenErrorPopup = false;
-	}
 	
-	bool isPopupOpen = true;
-	if (ImGui::BeginPopupModal(("Error##" + HelperFunctions::GenerateStringHash(&repo)).c_str(),&isPopupOpen,ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize)) {
-		ImGui::Text(errorMsg.c_str());
-
-		if (ImGui::Button("Ok")) {
-			ImGui::CloseCurrentPopup();
-		}
-
-		ImGui::EndPopup();
-	}
-
-	if (!isPopupOpen) {
-		ImGui::CloseCurrentPopup();
-	}
-
 	ImGui::End();
 }
 
@@ -364,8 +379,16 @@ void CMakeGenerator::ShowRepoCreateMenu()
 bool CMakeGenerator::ValidateInputs()
 {
 	if (m_Properties.projectName == "") {
+		CMakeGenerator::ShowErrorPopup("Please provide a project name!");
 		return false;
 	}
+
+	if (m_Properties.cmakeVersion == "") {
+		CMakeGenerator::ShowErrorPopup("Please provide a cmake version!");
+		return false;
+	}
+
+
 	return true;
 }
 
