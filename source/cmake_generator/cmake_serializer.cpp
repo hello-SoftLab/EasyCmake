@@ -1,7 +1,7 @@
 #include "cmake_serializer.h"
 #include "external_repo.h"
 #include <fstream>
-
+#include "cmake_generator.h"
 
 bool CMakeSerializer::GenerateCMakeLists(const CmakeGeneratorProperties& prop)
 {
@@ -233,3 +233,87 @@ fmt::format("{}/",name) + fmt::format("{})\n", include.path);
 
 	return true;
 }
+
+bool CMakeSerializer::SerializeToSave(std::string name)
+{
+	if (m_SavedConfigs[name].IsDefined()) {
+		CMakeGenerator::ShowErrorPopup(fmt::format(R"("{}" is already defined as a save!)",name));
+		return false;
+	}
+
+	YAML::Node mainNode;
+
+	mainNode["cmake_version"] = CMakeGenerator::Settings().cmakeVersion;
+	mainNode["project_name"] = CMakeGenerator::Settings().projectName;
+
+	for (auto& subdir : CMakeGenerator::Settings().subdirectories) {
+		mainNode["subdirectories"].push_back(subdir.subdir);
+	}
+
+	for (auto& repo : CMakeGenerator::Settings().repositories) {
+		if (!repo) {
+			continue;
+		}
+		mainNode["repositories"].push_back(repo.Get()->Serialize());
+	}
+
+	for (auto& target : CMakeGenerator::Settings().targets) {
+		if (!target) {
+			continue;
+		}
+		YAML::Node targetNode;
+		targetNode["name"] = target.Get()->name;
+		targetNode["cpp_standard"] = target.Get()->cppStandard;
+		targetNode["type"] = target.Get()->type;
+
+		if (target.Get()->sourceFiles != "") {
+			targetNode["sources"] = target.Get()->sourceFiles;
+		}
+
+		for (auto& include : target.Get()->includes) {
+			YAML::Node includeNode;
+			includeNode["path"] = include.path;
+			includeNode["access"] = include.access;
+			targetNode["includes"].push_back(includeNode);
+		}
+
+		for (auto& library : target.Get()->libraries) {
+			YAML::Node libNode;
+			libNode["path"] = library.path;
+			libNode["access"] = library.access;
+			libNode["is_alias"] = library.isTargetName;
+			libNode["debug_postfix"] = library.debugPostfix;
+			targetNode["libraries"].push_back(libNode);
+		}
+
+		for (auto& repo : target.Get()->externalRepos) {
+			if (!repo) {
+				continue;
+			}
+			targetNode["external_repositories"].push_back(repo.Get()->GetAlias());
+		}
+
+		mainNode["targets"].push_back(targetNode);
+
+	}
+
+	m_SavedConfigs[name] = mainNode;
+
+	return true;
+
+}
+
+bool CMakeSerializer::DeserializeSavedConfig(std::string name)
+{
+	if (m_SavedConfigs[name].IsNull()) {
+		return false;
+	}
+
+
+}
+
+const YAML::Node& CMakeSerializer::GetSavedConfigs()
+{
+	return m_SavedConfigs;
+}
+

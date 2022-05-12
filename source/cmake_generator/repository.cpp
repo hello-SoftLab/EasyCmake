@@ -28,6 +28,16 @@ bool Repository::CheckRepoValidity()
 	return this->IsRepoReady();
 }
 
+bool Repository::OnDeserialize(YAML::Node& node)
+{
+	return false;
+}
+
+YAML::Node Repository::OnSerialize()
+{
+	return YAML::Node();
+}
+
 bool Repository::IsRepoReady()
 {
 	return false;
@@ -56,6 +66,36 @@ void Repository::ClosePopup()
 bool Repository::IsPopupOpen()
 {
 	return m_ShouldOpenPopup;
+}
+
+bool Repository::Deserialize(YAML::Node& node)
+{
+	return false;
+}
+
+YAML::Node Repository::Serialize()
+{
+	YAML::Node node;
+	node["sources"] = m_SourcesToAdd;
+	for (auto& include : m_Includes) {
+		YAML::Node includeNode;
+		includeNode["path"] = include.path;
+		includeNode["access"] = include.access;
+		node["includes"].push_back(includeNode);
+	}
+	for (auto& library : m_Libraries) {
+		YAML::Node libNode;
+		libNode["path"] = library.path;
+		libNode["access"] = library.access;
+		libNode["is_alias"] = library.isTargetName;
+		libNode["debug_postfix"] = library.debugPostfix;
+		node["libraries"].push_back(libNode);
+	}
+
+
+	node.push_back(this->OnSerialize());
+
+	return node;
 }
 
 

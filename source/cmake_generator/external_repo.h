@@ -16,6 +16,8 @@ private:
 	bool m_ShouldBuild = false;
 	std::string m_CmakeArgs = "";
  
+
+	YAML::Node OnSerialize() override;
 	std::string GetCMakeArgs();
 	std::string GetCMakeListsString() override;
 	void SetupPopupWidgets() override;

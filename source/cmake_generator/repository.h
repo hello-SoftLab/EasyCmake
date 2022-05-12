@@ -22,8 +22,8 @@ public:
 
 	bool IsPopupOpen();
 
-
-
+	bool Deserialize(YAML::Node& node);
+	YAML::Node Serialize();
 
 	std::string GetPopupID();
 
@@ -36,6 +36,8 @@ public:
 	const std::vector<LibrarySettings>& GetLibraries() const;
 
 protected:
+	virtual bool OnDeserialize(YAML::Node& node);
+	virtual YAML::Node OnSerialize();
 	virtual bool IsRepoReady();
 
 	std::string m_SourcesToAdd = "";

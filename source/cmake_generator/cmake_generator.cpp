@@ -220,6 +220,20 @@ void CMakeGenerator::ShowMainWindow()
 		ImGui::CloseCurrentPopup();
 	}
 
+	
+	if (m_ShouldShowCustomPopup) {
+		bool shouldOpen = true;
+		if (ImGui::Begin((m_CustomPopupTitle + "##Custom" + HelperFunctions::GenerateStringHash(&m_Properties)).c_str(),&shouldOpen)) {
+
+			m_CustomPopupWidgets();
+
+			ImGui::End();
+		}
+
+		if (!shouldOpen) {
+			m_ShouldShowCustomPopup = false;
+		}
+	}
 
 	
 	ImGui::End();
@@ -247,6 +261,18 @@ void CMakeGenerator::ShowErrorPopup(std::string errorMsg)
 	m_ShouldShowErrorPopup = true;
 }
 
+void CMakeGenerator::ShowCustomPopup(std::string name, std::function<void()> widgetsFunc)
+{
+	m_ShouldShowCustomPopup = true;
+	m_CustomPopupWidgets = widgetsFunc;
+	m_CustomPopupTitle = name;
+}
+
+void CMakeGenerator::CloseCustomPopup()
+{
+	m_ShouldShowCustomPopup = false;
+}
+
 bool CMakeGenerator::FindAliasInRepositories(std::string alias)
 {
 	for (auto& repo : Repositories()) {
@@ -256,6 +282,8 @@ bool CMakeGenerator::FindAliasInRepositories(std::string alias)
 	}
 	return false;
 }
+
+
 
 void CMakeGenerator::ShowPopupForRepo(RepositoryHandle& repo)
 {

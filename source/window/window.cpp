@@ -1,6 +1,7 @@
 #include "window.h"
 #include "../cmake_generator/cmake_generator.h"
 #include "../cmake_generator/window_manager.h"
+#include "../cmake_generator/cmake_serializer.h"
 
 Window::Window(int width, int height) {
     m_CurrentWindow = this;
@@ -103,11 +104,52 @@ void Window::ShowGUI()
         if (ImGui::BeginMenu("File")) {
 
             if (ImGui::MenuItem("Save Configuration As")) {
+                CMakeGenerator::ShowCustomPopup("Config Name", []() {
+                
+                    static std::string name = "";
+                    if (ImGui::BeginTable(("SavingConfigTable"),2)) {
 
+                        ImGui::TableNextColumn();
+
+                        ImGui::Text("Name");
+
+                        ImGui::TableNextColumn();
+
+                        ImGui::InputText("##NameOfConfig",&name);
+
+                        ImGui::TableNextColumn();
+                        
+                        if (ImGui::Button("Ok")) {
+                            CMakeSerializer::SerializeToSave(name);
+                            CMakeGenerator::CloseCustomPopup();
+                        }
+
+                        ImGui::TableNextColumn();
+
+                        if (ImGui::Button("Cancel")) {
+                            CMakeGenerator::CloseCustomPopup();
+                        }
+
+                        ImGui::EndTable();
+                    }
+                    
+                });
             }
 
             if (ImGui::MenuItem("Load Configuration")) {
+                if (CMakeSerializer::GetSavedConfigs().size() > 0) {
+                    CMakeGenerator::ShowCustomPopup("Saved Configs", []() {
 
+                        for (auto& config : CMakeSerializer::GetSavedConfigs()) {
+                            if (ImGui::MenuItem(config.first.as<std::string>().c_str())) {
+
+                            }
+                        }
+
+
+
+                    });
+                }
             }
             ImGui::EndMenu();
         }

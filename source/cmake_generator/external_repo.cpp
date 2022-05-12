@@ -71,6 +71,16 @@ void ExternalRepository::SetupPopupWidgets()
 	
 }
 
+YAML::Node ExternalRepository::OnSerialize()
+{
+	YAML::Node node;
+	node["location"] = m_RepoLocation;
+	node["git_tag"] = m_GitTag;
+	node["should_build"] = m_ShouldBuild;
+	node["cmake_args"] = m_CmakeArgs;
+	return node;
+}
+
 std::string ExternalRepository::GetCMakeArgs()
 {
 	std::string returnStr = "";

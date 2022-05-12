@@ -55,6 +55,9 @@ public:
 	}
 
 	static void ShowErrorPopup(std::string errorMsg);
+	static void ShowCustomPopup(std::string name,std::function<void()> widgetsFunc);
+	static void CloseCustomPopup();
+	
 
 	static bool FindAliasInRepositories(std::string alias);
 	static const std::vector<RepositoryHandle>& Repositories();
@@ -62,12 +65,16 @@ public:
 	static void ShowMainWindow();
 
 private:
+	
 	static void ShowPopupForRepo(RepositoryHandle& handle);
 	static void ValidateRepos();
 	static void ShowRepoCreateMenu();
 	
 	static bool ValidateInputs();
 	
+	static inline bool m_ShouldShowCustomPopup = false;
+	static inline std::string m_CustomPopupTitle = "";
+	static inline std::function<void()> m_CustomPopupWidgets;
 	static inline bool m_ShouldShowErrorPopup = false;
 	static inline std::string m_ErrorPopupMsg = "";
 	static inline CmakeGeneratorProperties m_Properties;
