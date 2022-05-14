@@ -119,13 +119,48 @@ void Window::ShowGUI()
 
             if (ImGui::MenuItem("Save As")) {
                 static std::string saveNameForSerialization = "";
+                static bool isSaveNameForOverwriting = false;
                 saveNameForSerialization = "";
                 CustomPopupProperties prop;
+                prop.initialSize = ImVec2(300,200);
                 prop.title = "Please Choose a Save Name";
                 CMakeGenerator::ShowCustomPopup(prop, [&]() {
                     
+                    if (ImGui::BeginTable("TableForConfigLoadingOverwriting",1,ImGuiTableFlags_BordersOuter)) {
+
+                        ImGui::TableNextColumn();
+                            
+                        ImGui::PushStyleColor(ImGuiCol_Header, Color(50, 50, 50).AsImVec4());
+                        ImGui::Selectable("Current Configurations", true, ImGuiSelectableFlags_Disabled | ImGuiSelectableFlags_SpanAvailWidth);
+                        ImGui::PopStyleColor();
+
+                        bool foundAnyEqual = false;
+                        for (auto& config : CMakeSerializer::GetSavedConfigs()) {
+                            ImGui::TableNextColumn();
+
+                            const bool selected = saveNameForSerialization == config.first.as < std::string>();
+
+                            if (ImGui::Selectable(config.first.as<std::string>().c_str(), selected)) {
+                                saveNameForSerialization = config.first.as<std::string>();
+                                
+                            }
+
+                            if (selected) {
+                                isSaveNameForOverwriting = true;
+                                foundAnyEqual = true;
+                            }
+
+                        }
+
+                        if (!foundAnyEqual) {
+                            isSaveNameForOverwriting = false;
+                        }
+
+                        ImGui::EndTable();
+                    }
 
                     if (ImGui::BeginTable(("SavingConfigTable"),2)) {
+
 
                         ImGui::TableNextColumn();
 
@@ -135,21 +170,24 @@ void Window::ShowGUI()
 
                         ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
                         ImGui::InputText("##NameOfConfig",&saveNameForSerialization);
-                        
-                        ImGui::TableNextColumn();
-                        
-                        if (ImGui::Button("Ok")) {
-                            CMakeSerializer::SerializeToSave(saveNameForSerialization);
-                            CMakeGenerator::CloseCustomPopup();
-                        }
-
-                        ImGui::TableNextColumn();
-
-                        if (ImGui::Button("Cancel")) {
-                            CMakeGenerator::CloseCustomPopup();
-                        }
+                       
 
                         ImGui::EndTable();
+                    }
+
+                    std::string buttonTitle = isSaveNameForOverwriting ? "Overwrite" : "Ok";
+
+                    ImGui::SetCursorPos(ImVec2(2, ImGui::GetWindowSize().y - (ImGui::CalcTextSize("A").y * 2 - 1)));
+
+                    if (ImGui::Button(buttonTitle.c_str())) {
+                        CMakeSerializer::SerializeToSave(saveNameForSerialization);
+                        CMakeGenerator::CloseCustomPopup();
+                    }
+
+                    ImGui::SameLine();
+
+                    if (ImGui::Button("Cancel")) {
+                        CMakeGenerator::CloseCustomPopup();
                     }
                     
                 });
@@ -167,7 +205,7 @@ void Window::ShowGUI()
                     CMakeGenerator::ShowCustomPopup(prop, [&]() {
 
                         ImGui::PushStyleColor(ImGuiCol_Header,Color(50,50,50).AsImVec4());
-                        ImGui::Selectable("Please choose a save",true,ImGuiSelectableFlags_SpanAvailWidth);
+                        ImGui::Selectable("Please choose a save",true,ImGuiSelectableFlags_SpanAvailWidth | ImGuiSelectableFlags_Disabled);
                         ImGui::PopStyleColor();
                         
                         if (ImGui::BeginTable(("TableFor" + HelperFunctions::GenerateStringHash(&chosenSaveForDeserialization)).c_str(),2,ImGuiTableFlags_BordersOuter | ImGuiTableFlags_SizingStretchSame)) {
@@ -225,6 +263,7 @@ number of external repos = )" + fmt::format("{}", config.second["repositories"].
                             ImGui::SetCursorPos(ImVec2(ImGui::CalcTextSize("A").x, ImGui::GetWindowSize().y - (ImGui::CalcTextSize("A").y * 2 + 1)));
                             if (ImGui::Button("Load")) {
                                 CMakeSerializer::DeserializeSavedConfig(chosenSaveForDeserialization);
+                                CMakeGenerator::CloseCustomPopup();
                             }
                         }
 

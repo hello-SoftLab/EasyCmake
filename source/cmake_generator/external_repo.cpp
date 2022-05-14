@@ -76,6 +76,11 @@ ExternalRepository::ExternalRepository() : Repository(HelperFunctions::GetClassN
 
 }
 
+bool ExternalRepository::ShouldBuild()
+{
+	return m_ShouldBuild;
+}
+
 bool ExternalRepository::OnDeserialize(YAML::Node& node)
 {
 	HelperFunctions::DeserializeVariable("location",m_RepoLocation,node);

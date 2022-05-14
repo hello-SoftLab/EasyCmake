@@ -2,6 +2,7 @@
 #include "external_repo.h"
 #include <fstream>
 #include "cmake_generator.h"
+#include "../window/window.h"
 
 bool CMakeSerializer::GenerateCMakeLists(const CmakeGeneratorProperties& prop)
 {
@@ -49,7 +50,8 @@ include(FetchContent)
 
 
 
-	stringToAdd += fmt::format(R"(project("{}")\n)", prop.projectName).c_str();
+	stringToAdd += fmt::format(R"(project("{}")
+)", prop.projectName).c_str();
 
 
 	if (prop.subdirectories.size() > 0) {
@@ -137,7 +139,7 @@ add_executable()" + fmt::format("{}\n\n",target.Get()->name);
 			}
 
 
-			if (repo.IsHoldingType<ExternalRepository>()) {
+			if (repo.IsHoldingType<ExternalRepository>() && repo.GetAs<ExternalRepository>()->ShouldBuild()) {
 				externalRepoCount.push_back(repo.Get()->GetAlias());
 			}
 		}
@@ -155,6 +157,7 @@ set_property(TARGET )" + fmt::format("{}", target.Get()->name) + R"( PROPERTY CX
 )";
 
 			for (auto& dep : externalRepoCount) {
+				
 				stringToAdd += R"(
 add_dependencies()" + fmt::format("{} ",target.Get()->name) + fmt::format("{})\n",dep);
 			}
@@ -261,6 +264,47 @@ bool CMakeSerializer::LoadConfigsFromFile(std::string fileName)
 	return true;
 }
 
+bool CMakeSerializer::SaveCurrentSavedDiretoriesToFile(std::string fileName)
+{
+	std::ofstream stream;
+
+	stream.open(fileName);
+
+	if (!stream.is_open()) {
+		return false;
+	}
+
+	stream << m_SavedDirectories;
+
+	stream.close();
+
+	return true;
+}
+
+bool CMakeSerializer::LoadCurrentSavedDirectoriesFromFile(std::string fileName)
+{
+	if (!std::filesystem::exists(fileName)) {
+		return false;
+	}
+
+	m_SavedDirectories = YAML::LoadFile(fileName);
+
+	return true;
+}
+
+void CMakeSerializer::Init()
+{
+	CMakeSerializer::LoadConfigsFromFile("save_files.yaml");
+	CMakeSerializer::LoadCurrentSavedDirectoriesFromFile("saved_directories.yaml");
+
+
+	Window::GetCurrentWindow().OnClosing().Connect([]() {
+		//DEBUG_LOG("Saving...");
+		CMakeSerializer::SaveCurrentSavedDiretoriesToFile("saved_directories.yaml");
+		CMakeSerializer::SaveCurrentConfigsToFile("save_files.yaml");
+		});
+}
+
 bool CMakeSerializer::SerializeToSave(std::string name)
 {
 	if (m_SavedConfigs[name].IsDefined()) {
@@ -303,6 +347,29 @@ bool CMakeSerializer::RemoveSave(std::string name)
 const YAML::Node& CMakeSerializer::GetSavedConfigs()
 {
 	return m_SavedConfigs;
+}
+
+bool CMakeSerializer::HasDirectoryBeenUsedBefore()
+{
+	return m_SavedDirectories[CMakeGenerator::Settings().currentDirectory].operator bool();
+}
+
+bool CMakeSerializer::SaveCurrentToSavedDirectories()
+{
+	m_SavedDirectories[CMakeGenerator::Settings().currentDirectory] = SerializeToNode();
+
+	return true;
+}
+
+bool CMakeSerializer::LoadCurrentFromSavedDirectories()
+{
+	if (m_SavedDirectories[CMakeGenerator::Settings().currentDirectory]) {
+		YAML::Node node = m_SavedDirectories[CMakeGenerator::Settings().currentDirectory];
+		DeserializeFromNode(node);
+		return true;
+	}
+
+	return false;
 }
 
 bool CMakeSerializer::SaveCurrentToCache()

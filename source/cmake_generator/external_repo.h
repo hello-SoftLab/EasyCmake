@@ -9,6 +9,7 @@ class ExternalRepository : public Repository {
 public:
 	ExternalRepository();
 
+	bool ShouldBuild();
 
 private:
 	std::string m_RepoLocation="";

@@ -8,11 +8,9 @@ int main() {
 
 	Window window(1280,720);
 
-	CMakeSerializer::LoadConfigsFromFile("save_files.yaml");
-	window.OnClosing().Connect([](){
-		//DEBUG_LOG("Saving...");
-		CMakeSerializer::SaveCurrentConfigsToFile("save_files.yaml");
-	});
+
+	CMakeSerializer::Init();
+	
 	
 
 	while (window.IsOpen()) {

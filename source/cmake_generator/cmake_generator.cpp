@@ -59,10 +59,37 @@ void CMakeGenerator::ShowMainWindow()
 				
 				});
 				*/
+
+
+
 				CMakeSerializer::SaveCurrentToCache();
 				CMakeGenerator::ClearCurrentSettings();
 				m_Properties.currentDirectory = outPath.get();
-				CMakeSerializer::LoadCurrentFromCache();
+				
+				if (CMakeSerializer::HasDirectoryBeenUsedBefore()) {
+					CustomPopupProperties prop;
+					prop.title = "Warning";
+					prop.initialSize = ImVec2(300, 100);
+					CMakeGenerator::ShowCustomPopup(prop, [=]() {
+
+						ImGui::TextWrapped("A CMakeLists.txt was already created on this directory with EasyCmake. Do you wish to load the last used configurations?");
+
+
+						ImGui::SetCursorPos(ImVec2(5,ImGui::GetWindowSize().y - (ImGui::CalcTextSize("A").y * 2 - 1)));
+						if (ImGui::Button("Yes")) {
+							CMakeSerializer::LoadCurrentFromSavedDirectories();
+							CMakeGenerator::CloseCustomPopup();
+						}
+						ImGui::SameLine();
+						if (ImGui::Button("No")) {
+							CMakeSerializer::LoadCurrentFromCache();
+							CMakeGenerator::CloseCustomPopup();
+						}
+
+						});
+				}
+				
+				//CMakeSerializer::LoadCurrentFromCache();
 			}
 		}
 
@@ -207,6 +234,7 @@ void CMakeGenerator::ShowMainWindow()
 	if (ImGui::Button("Generate")) {
 		if (ValidateInputs()) {
 			CMakeSerializer::GenerateCMakeLists(m_Properties);
+			CMakeSerializer::SaveCurrentToSavedDirectories();
 		}
 	}
 
