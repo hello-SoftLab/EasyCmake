@@ -157,9 +157,12 @@ set_property(TARGET )" + fmt::format("{}", target.Get()->name) + R"( PROPERTY CX
 )";
 
 			for (auto& dep : externalRepoCount) {
-				
+
 				stringToAdd += R"(
-add_dependencies()" + fmt::format("{} ",target.Get()->name) + fmt::format("{})\n",dep);
+if(NOT ${)" + fmt::format("{}_exists", dep) + R"(})
+	add_dependencies()" + fmt::format("{} ", target.Get()->name) + fmt::format("{})", dep) + R"(
+endif()
+)";
 			}
 		}
 
@@ -173,12 +176,9 @@ add_dependencies()" + fmt::format("{} ",target.Get()->name) + fmt::format("{})\n
 				stringToAdd += R"(
 target_link_libraries()" + fmt::format("{} ",target.Get()->name) + fmt::format("{} ",library.access);
 
-				if (library.isTargetName) {
-					stringToAdd += fmt::format("{})\n",library.path);
-				}
-				else{
-					stringToAdd += "${PROJECT_SOURCE_DIR}/" + fmt::format("{})\n", library.path);
-				}
+				
+				stringToAdd += "${PROJECT_SOURCE_DIR}/" + fmt::format("{})\n", library.path);
+				
 
 			}
 
@@ -186,12 +186,17 @@ target_link_libraries()" + fmt::format("{} ",target.Get()->name) + fmt::format("
 				stringToAdd += R"(
 target_link_libraries()" + fmt::format("{} ", target.Get()->name) + fmt::format("{} ", library.access);
 
-				if (library.isTargetName) {
-					stringToAdd += fmt::format("{})\n", library.path);
+				std::string libraryName = library.path;
+
+				if (size_t location = library.path.find_last_of('/'); location != std::string::npos) {
+					libraryName = library.path.substr(0, location);
+					libraryName += "${CMAKE_STATIC_LIBRARY_PREFIX}";
+					libraryName += fmt::format("{}$<$<CONFIG:Debug>:{}>", library.path.substr(location), library.debugPostfix);
+					libraryName += "${CMAKE_STATIC_LIBRARY_SUFFIX}";
 				}
-				else {
-					stringToAdd += "${PROJECT_SOURCE_DIR}/vendor/" + fmt::format("{}/",name) + fmt::format("{})\n", library.path);
-				}
+
+				stringToAdd += R"(${PROJECT_SOURCE_DIR}/vendor/)" + fmt::format("{}/", name) + libraryName + ")\n";
+				
 			}
 
 		}
@@ -459,7 +464,7 @@ bool CMakeSerializer::DeserializeFromNode(YAML::Node& mainNode)
 					HelperFunctions::DeserializeVariable("path", library.path, lib_node);
 					HelperFunctions::DeserializeVariable("access", library.access, lib_node);
 					HelperFunctions::DeserializeVariable("debug_postfix", library.debugPostfix, lib_node);
-					HelperFunctions::DeserializeVariable("is_alias", library.isTargetName, lib_node);
+					//HelperFunctions::DeserializeVariable("is_alias", library.isTargetName, lib_node);
 					newTarget.libraries.push_back(library);
 				}
 			}
@@ -521,7 +526,7 @@ YAML::Node CMakeSerializer::SerializeToNode()
 			YAML::Node libNode;
 			libNode["path"] = library.path;
 			libNode["access"] = library.access;
-			libNode["is_alias"] = library.isTargetName;
+			//libNode["is_alias"] = library.isTargetName;
 			libNode["debug_postfix"] = library.debugPostfix;
 			targetNode["libraries"].push_back(libNode);
 		}

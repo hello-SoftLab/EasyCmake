@@ -21,7 +21,7 @@ bool Repository::CheckRepoValidity()
 		return false;
 	}
 
-	if (CMakeGenerator::FindAliasInRepositories(m_Alias)) {
+	if (CMakeGenerator::FindAliasInRepositories(m_Alias) && CMakeGenerator::Settings().tempRepo.operator bool()) {
 		CMakeGenerator::ShowErrorPopup("Alias " + m_Alias + " already exists!\nPlease choose another name for your repository.");
 		return false;
 	}
@@ -90,7 +90,7 @@ bool Repository::Deserialize(YAML::Node& node)
 			HelperFunctions::DeserializeVariable("path",library.path,lib_node);
 			HelperFunctions::DeserializeVariable("access",library.access,lib_node);
 			HelperFunctions::DeserializeVariable("debug_postfix",library.debugPostfix,lib_node);
-			HelperFunctions::DeserializeVariable("is_alias",library.isTargetName,lib_node);
+			//HelperFunctions::DeserializeVariable("is_alias",library.isTargetName,lib_node);
 			m_Libraries.push_back(library);
 		}
 	}
@@ -121,7 +121,7 @@ YAML::Node Repository::Serialize()
 		YAML::Node libNode;
 		libNode["path"] = library.path;
 		libNode["access"] = library.access;
-		libNode["is_alias"] = library.isTargetName;
+		//libNode["is_alias"] = library.isTargetName;
 		libNode["debug_postfix"] = library.debugPostfix;
 		node["libraries"].push_back(libNode);
 	}

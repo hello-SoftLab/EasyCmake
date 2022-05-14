@@ -104,11 +104,12 @@ std::string ExternalRepository::GetCMakeArgs()
 {
 	std::string returnStr = "";
 	returnStr += R"(
-		CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=${PROJECT_SOURCE_DIR}/vendor/)" + fmt::format("{}",m_Alias) + R"(
-				   -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}\n)";
+			CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=${PROJECT_SOURCE_DIR}/vendor/)" + fmt::format("{}",m_Alias) + R"(
+					   -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+)";
 	for (auto& arg : HelperFunctions::SplitString(m_CmakeArgs, "\n")) {
 		returnStr += R"(
-				   -D)" + fmt::format("{}\n",arg);
+				       -D)" + fmt::format("{}\n",arg);
 	}
 
 	return returnStr;
@@ -134,7 +135,7 @@ std::string ExternalRepository::GetCMakeListsString()
 	std::string stringToAdd = "";
 
 	stringToAdd += R"(
-#repository download and settings for alias)" + fmt::format("{}...\n\n",this->m_Alias);
+#repository download and settings for alias )" + fmt::format("{}...\n\n",this->m_Alias);
 
 	stringToAdd += R"(
 	dir_exists()" + fmt::format("{}_exists ", this->m_Alias) + "${PROJECT_SOURCE_DIR}/vendor/" + fmt::format("{})\n\n", m_Alias);
@@ -148,16 +149,24 @@ std::string ExternalRepository::GetCMakeListsString()
 			GIT_REPOSITORY )" + fmt::format("{}\n", m_RepoLocation) + R"(
 			GIT_TAG )" + fmt::format("{}\n", m_GitTag) + GetCMakeArgs();
 		if (m_Libraries.size() > 0) {
-			for (auto& lib : m_Libraries) {
+			for (auto& library : m_Libraries) {
+
+				std::string libraryName = library.path;
+
+				if (size_t location = library.path.find_last_of('/'); location != std::string::npos) {
+					libraryName = library.path.substr(0, location);
+					libraryName += "${CMAKE_STATIC_LIBRARY_PREFIX}";
+					libraryName += fmt::format("{}$<$<CONFIG:Debug>:{}>", library.path.substr(location), library.debugPostfix);
+					libraryName += "${CMAKE_STATIC_LIBRARY_SUFFIX}";
+				}
+
 				stringToAdd += R"(
-			BUILD_BYPRODUCTS ${PROJECT_SOURCE_DIR}/vendor)" + fmt::format("{}/", m_Alias) + "lib/${CMAKE_STATIC_LIBRARY_PREFIX}" +
-					fmt::format("{}$<$<CONFIG:Debug>:{}",lib.path,lib.debugPostfix) + "${CMAKE_STATIC_LIBRARY_SUFFIX}\n";
+		BUILD_BYPRODUCTS ${PROJECT_SOURCE_DIR}/vendor/)" + fmt::format("{}/", m_Alias) + libraryName + "\n";
+			
 			}
 		}
 		stringToAdd += R"(
 		)
-		
-		list(APPEND ${PROJECT_NAME}_DEPENDENCIES_TO_BUILD )" + fmt::format("{})",m_Alias) + R"(
 
 	endif()
 
@@ -186,9 +195,11 @@ bool ExternalRepository::IsRepoReady()
 		return false;
 	}
 
-	if (CheckIfLocationAlreadyRegistered()) {
-		CMakeGenerator::ShowErrorPopup("Repository location '" + this->m_RepoLocation + "' was already registered!\nPlease choose another location.");
-		return false;
+	if (CMakeGenerator::Settings().tempRepo) {
+		if (CheckIfLocationAlreadyRegistered()) {
+			CMakeGenerator::ShowErrorPopup("Repository location '" + this->m_RepoLocation + "' was already registered!\nPlease choose another location.");
+			return false;
+		}
 	}
 	return true;
 }

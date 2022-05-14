@@ -70,7 +70,7 @@ void CMakeGenerator::ShowMainWindow()
 					CustomPopupProperties prop;
 					prop.title = "Warning";
 					prop.initialSize = ImVec2(300, 100);
-					CMakeGenerator::ShowCustomPopup(prop, [=]() {
+					prop.widgetFunc = [=]() {
 
 						ImGui::TextWrapped("A CMakeLists.txt was already created on this directory with EasyCmake. Do you wish to load the last used configurations?");
 
@@ -86,7 +86,8 @@ void CMakeGenerator::ShowMainWindow()
 							CMakeGenerator::CloseCustomPopup();
 						}
 
-						});
+					};
+					CMakeGenerator::ShowCustomPopup(prop);
 				}
 				
 				//CMakeSerializer::LoadCurrentFromCache();
@@ -155,6 +156,8 @@ void CMakeGenerator::ShowMainWindow()
 					ShowRepoCreateMenu();
 
 					if (ImGui::MenuItem("Modify")) {
+						//m_Properties.tempRepo = repo;
+						//m_Properties.tempRepo.Get()->OpenPopup();
 						repo.Get()->OpenPopup();
 					}
 
@@ -235,6 +238,19 @@ void CMakeGenerator::ShowMainWindow()
 		if (ValidateInputs()) {
 			CMakeSerializer::GenerateCMakeLists(m_Properties);
 			CMakeSerializer::SaveCurrentToSavedDirectories();
+			CustomPopupProperties prop;
+			prop.title = "Success!";
+			prop.widgetFunc = []() {
+
+				ImGui::Text("Successfully written to CMakeLists.txt!");
+
+				if (ImGui::Button("Ok")) {
+					ImGui::CloseCurrentPopup();
+				}
+
+
+			};
+			CMakeGenerator::ShowModalPopup(prop);
 		}
 	}
 
@@ -256,6 +272,19 @@ void CMakeGenerator::ShowMainWindow()
 	}
 
 	ValidateRepos();
+
+	if (m_CustomModalPopupProperties.shouldShow) {
+		ImGui::OpenPopup((m_CustomModalPopupProperties.title + "##" + HelperFunctions::GenerateStringHash(&m_Properties)).c_str());
+		m_CustomModalPopupProperties.shouldShow = false;
+	}
+
+	bool isModalOpen = true;
+	if (ImGui::BeginPopupModal((m_CustomModalPopupProperties.title + "##" + HelperFunctions::GenerateStringHash(&m_Properties)).c_str(), &isModalOpen)) {
+
+		m_CustomModalPopupProperties.widgetFunc();
+
+		ImGui::EndPopup();
+	}
 
 
 	if (CMakeGenerator::m_ShouldShowErrorPopup) {
@@ -279,7 +308,7 @@ void CMakeGenerator::ShowMainWindow()
 	}
 
 	
-	if (m_ShouldShowCustomPopup) {
+	if (m_CustomPopupProperties.shouldShow) {
 		bool shouldOpen = true;
 		
 		ImGui::SetNextWindowSize(m_CustomPopupProperties.initialSize,ImGuiCond_Once);
@@ -287,14 +316,14 @@ void CMakeGenerator::ShowMainWindow()
 
 
 
-			m_CustomPopupWidgets();
+			m_CustomPopupProperties.widgetFunc();
 
 
 		}
 		ImGui::End();
 
 		if (!shouldOpen) {
-			m_ShouldShowCustomPopup = false;
+			m_CustomPopupProperties.shouldShow = false;
 		}
 	}
 
@@ -318,6 +347,12 @@ CmakeGeneratorProperties& CMakeGenerator::Settings()
 
 
 
+void CMakeGenerator::ShowModalPopup(CustomPopupProperties prop)
+{
+	m_CustomModalPopupProperties = prop;
+	m_CustomModalPopupProperties.shouldShow = true;
+}
+
 void CMakeGenerator::ShowErrorPopup(std::string errorMsg)
 {
 	m_ErrorPopupMsg = errorMsg;
@@ -326,16 +361,18 @@ void CMakeGenerator::ShowErrorPopup(std::string errorMsg)
 
 
 
-void CMakeGenerator::ShowCustomPopup(CustomPopupProperties prop, std::function<void()> widgetsFunc)
+void CMakeGenerator::ShowCustomPopup(CustomPopupProperties prop)
 {
-	m_ShouldShowCustomPopup = true;
-	m_CustomPopupWidgets = widgetsFunc;
+	
 	m_CustomPopupProperties = prop;
+	m_CustomPopupProperties.shouldShow = true;
 }
+
+
 
 void CMakeGenerator::CloseCustomPopup()
 {
-	m_ShouldShowCustomPopup = false;
+	m_CustomPopupProperties.shouldShow = false;
 }
 
 void CMakeGenerator::ClearCurrentSettings()
@@ -619,7 +656,7 @@ void TargetGenerator::ShowWidgets()
 					}
 					auto repoIt = std::find(this->externalRepos.begin(), this->externalRepos.end(), repo);
 					bool check = (repoIt != this->externalRepos.end());
-					if (ImGui::Checkbox(("##RepoCheckbox" + HelperFunctions::GenerateStringHash(this)).c_str(), &check)) {
+					if (ImGui::Checkbox(("##RepoCheckbox" + HelperFunctions::GenerateStringHash((void*) & repo)).c_str(), &check)) {
 						if (!check) {
 							externalRepos.erase(repoIt);
 						}

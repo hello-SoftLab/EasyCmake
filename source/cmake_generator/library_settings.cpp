@@ -49,14 +49,6 @@ void LibrarySettings::ShowWidgets(std::vector<LibrarySettings>& libraries)
 			ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
 			ImGui::InputText(("##dpostfixForLibrary" + HelperFunctions::GenerateStringHash(&library)).c_str(), &library.debugPostfix);
 
-			ImGui::TableNextColumn();
-
-			ImGui::Text("Is Target Name");
-			
-			ImGui::TableNextColumn();
-
-			ImGui::Checkbox(("##checkboxForLibrary" + HelperFunctions::GenerateStringHash(&library)).c_str(),&library.isTargetName);
-
 			ImGui::EndTable();
 
 		}

@@ -124,7 +124,7 @@ void Window::ShowGUI()
                 CustomPopupProperties prop;
                 prop.initialSize = ImVec2(300,200);
                 prop.title = "Please Choose a Save Name";
-                CMakeGenerator::ShowCustomPopup(prop, [&]() {
+                prop.widgetFunc = [&]() {
                     
                     if (ImGui::BeginTable("TableForConfigLoadingOverwriting",1,ImGuiTableFlags_BordersOuter)) {
 
@@ -190,7 +190,8 @@ void Window::ShowGUI()
                         CMakeGenerator::CloseCustomPopup();
                     }
                     
-                });
+                };
+                CMakeGenerator::ShowCustomPopup(prop);
             }
 
             ImGui::Separator();
@@ -202,7 +203,7 @@ void Window::ShowGUI()
                     CustomPopupProperties prop;
                     prop.title = "Saved Configurations";
                     prop.initialSize = ImVec2(300,300);
-                    CMakeGenerator::ShowCustomPopup(prop, [&]() {
+                    prop.widgetFunc = [&]() {
 
                         ImGui::PushStyleColor(ImGuiCol_Header,Color(50,50,50).AsImVec4());
                         ImGui::Selectable("Please choose a save",true,ImGuiSelectableFlags_SpanAvailWidth | ImGuiSelectableFlags_Disabled);
@@ -269,7 +270,8 @@ number of external repos = )" + fmt::format("{}", config.second["repositories"].
 
 
 
-                    });
+                    };
+                    CMakeGenerator::ShowCustomPopup(prop);
                 }
             }
             ImGui::EndMenu();

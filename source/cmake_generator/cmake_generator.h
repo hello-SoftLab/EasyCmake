@@ -8,6 +8,13 @@ struct CustomPopupProperties {
 	std::string title = "";
 	ImVec2 initialSize = ImVec2(0,0);
 	ImGuiWindowFlags flags = ImGuiWindowFlags_NoCollapse;
+	std::function<void()> widgetFunc;
+
+private:
+	bool shouldShow = false;
+
+	friend class CMakeGenerator;
+
 };
 
 template<typename T>
@@ -60,8 +67,9 @@ public:
 		}
 	}
 
+	static void ShowModalPopup(CustomPopupProperties prop);
 	static void ShowErrorPopup(std::string errorMsg);
-	static void ShowCustomPopup(CustomPopupProperties prop,std::function<void()> widgetsFunc);
+	static void ShowCustomPopup(CustomPopupProperties prop);
 	static void CloseCustomPopup();
 	static void ClearCurrentSettings();
 	
@@ -79,9 +87,9 @@ private:
 	
 	static bool ValidateInputs();
 	
-	static inline bool m_ShouldShowCustomPopup = false;
+	
 	static inline CustomPopupProperties m_CustomPopupProperties;
-	static inline std::function<void()> m_CustomPopupWidgets;
+	static inline CustomPopupProperties m_CustomModalPopupProperties;
 	static inline bool m_ShouldShowErrorPopup = false;
 	static inline std::string m_ErrorPopupMsg = "";
 	static inline CmakeGeneratorProperties m_Properties;
