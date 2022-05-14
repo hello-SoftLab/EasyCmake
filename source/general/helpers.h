@@ -73,6 +73,7 @@ public:
     }
 
     
+    
     static size_t HashPtr(void* ptr);
 
     static std::string GenerateStringHash(void* ptr);

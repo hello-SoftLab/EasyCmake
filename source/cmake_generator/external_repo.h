@@ -7,7 +7,7 @@
 
 class ExternalRepository : public Repository {
 public:
-	
+	ExternalRepository();
 
 
 private:
@@ -16,7 +16,7 @@ private:
 	bool m_ShouldBuild = false;
 	std::string m_CmakeArgs = "";
  
-
+	bool OnDeserialize(YAML::Node& node) override;
 	YAML::Node OnSerialize() override;
 	std::string GetCMakeArgs();
 	std::string GetCMakeListsString() override;

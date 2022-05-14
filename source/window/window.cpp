@@ -45,7 +45,10 @@ Window::Window(int width, int height) {
     ImGui_ImplOpenGL3_Init("#version 430 core");
 
 
-    
+    glfwSetWindowCloseCallback(this->GetContextPointer(), [](GLFWwindow* ptr) {
+            Window::GetCurrentWindow().m_ClosingEvent.EmitEvent();
+        
+        });
 
 
 }
@@ -58,12 +61,17 @@ bool Window::IsOpen() {
 
 void Window::BeginFrame()
 {
+   
+
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
     ImGui::PushStyleColor(ImGuiCol_WindowBg, Color(50, 50, 50).AsImVec4());
     ImGui::PushStyleColor(ImGuiCol_ChildBg, Color(40, 40, 40).AsImVec4());
 }
+
+
+
 bool Window::EndFrame()
 {
     ImGui::PopStyleColor(2);
@@ -103,10 +111,12 @@ void Window::ShowGUI()
     if (ImGui::BeginMainMenuBar()) {
         if (ImGui::BeginMenu("File")) {
 
-            if (ImGui::MenuItem("Save Configuration As")) {
-                CMakeGenerator::ShowCustomPopup("Config Name", []() {
-                
-                    static std::string name = "";
+            if (ImGui::MenuItem("Save As")) {
+                static std::string saveNameForSerialization = "";
+                saveNameForSerialization = "";
+                CMakeGenerator::ShowCustomPopup("Please Choose a Save Name", [&]() {
+                    
+
                     if (ImGui::BeginTable(("SavingConfigTable"),2)) {
 
                         ImGui::TableNextColumn();
@@ -115,12 +125,13 @@ void Window::ShowGUI()
 
                         ImGui::TableNextColumn();
 
-                        ImGui::InputText("##NameOfConfig",&name);
-
+                        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+                        ImGui::InputText("##NameOfConfig",&saveNameForSerialization);
+                        
                         ImGui::TableNextColumn();
                         
                         if (ImGui::Button("Ok")) {
-                            CMakeSerializer::SerializeToSave(name);
+                            CMakeSerializer::SerializeToSave(saveNameForSerialization);
                             CMakeGenerator::CloseCustomPopup();
                         }
 
@@ -136,13 +147,45 @@ void Window::ShowGUI()
                 });
             }
 
-            if (ImGui::MenuItem("Load Configuration")) {
+            if (ImGui::MenuItem("Load")) {
                 if (CMakeSerializer::GetSavedConfigs().size() > 0) {
-                    CMakeGenerator::ShowCustomPopup("Saved Configs", []() {
+                    static std::string chosenSaveForDeserialization = "";
+                    chosenSaveForDeserialization = "";
+                    CMakeGenerator::ShowCustomPopup("Saved Configurations", [&]() {
+                        
 
-                        for (auto& config : CMakeSerializer::GetSavedConfigs()) {
-                            if (ImGui::MenuItem(config.first.as<std::string>().c_str())) {
+                       
+                        ImGui::PushStyleColor(ImGuiCol_Header,Color(50,50,50).AsImVec4());
+                        ImGui::Selectable("Please choose a save",true,ImGuiSelectableFlags_SpanAvailWidth);
+                        ImGui::PopStyleColor();
+                        
+                        if (ImGui::BeginTable(("TableFor" + HelperFunctions::GenerateStringHash(&chosenSaveForDeserialization)).c_str(),2,ImGuiTableFlags_BordersOuter | ImGuiTableFlags_SizingStretchSame)) {
+                            int index = 0;
+                            ImGui::TableSetupColumn("first",0,10);
+                            ImGui::TableSetupColumn("second", 0, 1);
+                            
+                            for (auto& config : CMakeSerializer::GetSavedConfigs()) {
+                                ImGui::TableNextColumn();
+                                const bool selected = chosenSaveForDeserialization == config.first.as<std::string>();
+                                if (ImGui::Selectable(config.first.as<std::string>().c_str(), selected)) {
+                                    chosenSaveForDeserialization = config.first.as<std::string>();
+                                }
 
+                                ImGui::TableNextColumn();
+
+                                ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+                                if (ImGui::Selectable(("X##" + std::to_string(std::hash<int>()(index))).c_str())) {
+                                    CMakeSerializer::RemoveSave(config.first.as<std::string>());
+                                }
+                                index++;
+                            }
+                            ImGui::EndTable();
+                        }
+
+                        if (chosenSaveForDeserialization != "") {
+                            ImGui::SetCursorPos(ImVec2(ImGui::CalcTextSize("A").x, ImGui::GetWindowSize().y - (ImGui::CalcTextSize("A").y * 2)));
+                            if (ImGui::Button("Load")) {
+                                CMakeSerializer::DeserializeSavedConfig(chosenSaveForDeserialization);
                             }
                         }
 
@@ -178,4 +221,9 @@ GLFWwindow* Window::GetContextPointer()
 Window& Window::GetCurrentWindow()
 {
     return *m_CurrentWindow;
+}
+
+FunctionSink<void()> Window::OnClosing()
+{
+    return FunctionSink<void()>(m_ClosingEvent);
 }

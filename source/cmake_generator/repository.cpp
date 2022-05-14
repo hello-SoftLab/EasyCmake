@@ -2,8 +2,9 @@
 #include "cmake_generator.h"
 
 
-Repository::Repository()
+Repository::Repository(std::string type) : m_Type(type)
 {
+
 }
 
 
@@ -70,12 +71,45 @@ bool Repository::IsPopupOpen()
 
 bool Repository::Deserialize(YAML::Node& node)
 {
-	return false;
+	HelperFunctions::DeserializeVariable("alias",m_Alias,node);
+	HelperFunctions::DeserializeVariable("type",m_Type,node);
+	HelperFunctions::DeserializeVariable("sources",m_SourcesToAdd,node);
+
+	if (node["includes"]) {
+		for (auto include_node : node["includes"]) {
+			IncludeSettings include;
+			HelperFunctions::DeserializeVariable("path",include.path,include_node);
+			HelperFunctions::DeserializeVariable("access",include.access,include_node);
+			m_Includes.push_back(include);
+		}
+	}
+
+	if (node["libraries"]) {
+		for (auto lib_node : node["libraries"]) {
+			LibrarySettings library;
+			HelperFunctions::DeserializeVariable("path",library.path,lib_node);
+			HelperFunctions::DeserializeVariable("access",library.access,lib_node);
+			HelperFunctions::DeserializeVariable("debug_postfix",library.debugPostfix,lib_node);
+			HelperFunctions::DeserializeVariable("is_alias",library.isTargetName,lib_node);
+			m_Libraries.push_back(library);
+		}
+	}
+
+	if (node["derived"]) {
+		YAML::Node derivedNode = node["derived"];
+		this->OnDeserialize(derivedNode);
+	}
+
+
+	return true;
+
 }
 
 YAML::Node Repository::Serialize()
 {
 	YAML::Node node;
+	node["alias"] = m_Alias;
+	node["type"] = m_Type;
 	node["sources"] = m_SourcesToAdd;
 	for (auto& include : m_Includes) {
 		YAML::Node includeNode;
@@ -92,8 +126,9 @@ YAML::Node Repository::Serialize()
 		node["libraries"].push_back(libNode);
 	}
 
+	
 
-	node.push_back(this->OnSerialize());
+	node["derived"] = this->OnSerialize();
 
 	return node;
 }

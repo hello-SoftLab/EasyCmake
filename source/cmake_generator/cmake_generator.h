@@ -57,9 +57,10 @@ public:
 	static void ShowErrorPopup(std::string errorMsg);
 	static void ShowCustomPopup(std::string name,std::function<void()> widgetsFunc);
 	static void CloseCustomPopup();
+	static void ClearCurrentSettings();
 	
 
-	static bool FindAliasInRepositories(std::string alias);
+	static RepositoryHandle FindAliasInRepositories(std::string alias);
 	static const std::vector<RepositoryHandle>& Repositories();
 	static CmakeGeneratorProperties& Settings();
 	static void ShowMainWindow();

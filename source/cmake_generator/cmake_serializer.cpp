@@ -234,6 +234,33 @@ fmt::format("{}/",name) + fmt::format("{})\n", include.path);
 	return true;
 }
 
+bool CMakeSerializer::SaveCurrentConfigsToFile(std::string fileName)
+{
+
+	std::ofstream stream;
+	stream.open(fileName);
+
+	if (!stream.is_open()) {
+		DEBUG_LOG("Could not save to " + fileName);
+		return false;
+	}
+
+	stream << m_SavedConfigs;
+
+	return true;
+}
+
+bool CMakeSerializer::LoadConfigsFromFile(std::string fileName)
+{
+	if (!std::filesystem::exists(fileName)) {
+		return false;
+	}
+
+	m_SavedConfigs = YAML::LoadFile(fileName);
+
+	return true;
+}
+
 bool CMakeSerializer::SerializeToSave(std::string name)
 {
 	if (m_SavedConfigs[name].IsDefined()) {
@@ -305,11 +332,106 @@ bool CMakeSerializer::SerializeToSave(std::string name)
 
 bool CMakeSerializer::DeserializeSavedConfig(std::string name)
 {
-	if (m_SavedConfigs[name].IsNull()) {
+	if (m_SavedConfigs[name].IsNull() || !m_SavedConfigs[name].IsDefined()) {
 		return false;
 	}
 
+	CMakeGenerator::ClearCurrentSettings();
 
+	YAML::Node mainNode = m_SavedConfigs[name];
+	
+	HelperFunctions::DeserializeVariable<std::string>("cmake_version", CMakeGenerator::Settings().cmakeVersion, mainNode);
+	HelperFunctions::DeserializeVariable<std::string>("project_name", CMakeGenerator::Settings().projectName, mainNode);
+
+	if (mainNode["subdirectories"]) {
+		for (auto node : mainNode["subdirectories"]) {
+			std::string var = node.as<std::string>();
+			CMakeGenerator::Settings().subdirectories.push_back({var});
+		}
+	} 
+
+
+	if (mainNode["repositories"]) {
+		for (auto repo_node : mainNode["repositories"]) {
+			std::string type = "";
+			HelperFunctions::DeserializeVariable("type",type,repo_node);
+
+			if (type == "") {
+				continue;
+			}
+			RepositoryHandle repo;
+
+			if (type == HelperFunctions::GetClassName<ExternalRepository>()) {
+				repo.HoldType<ExternalRepository>();
+			}
+			
+			if (!repo) {
+				continue;
+			}
+
+			repo.Get()->Deserialize(repo_node);
+
+			CMakeGenerator::Settings().repositories.push_back(repo);
+
+		}
+	}
+
+	if (mainNode["targets"]) {
+		for (auto node : mainNode["targets"]) {
+
+			auto& ptrHolder = CMakeGenerator::Settings().targets.emplace_back();
+			TargetGenerator& newTarget = ptrHolder.HoldType<TargetGenerator>();
+
+			HelperFunctions::DeserializeVariable("name",newTarget.name,node);
+
+			HelperFunctions::DeserializeVariable("cpp_standard",newTarget.cppStandard,node);
+
+			HelperFunctions::DeserializeVariable("type",newTarget.type,node);
+
+			HelperFunctions::DeserializeVariable("sources",newTarget.sourceFiles,node);
+
+			if (node["includes"]) {
+				for (auto include_node : node["includes"]) {
+					IncludeSettings include;
+					HelperFunctions::DeserializeVariable("path",include.path,include_node);
+					HelperFunctions::DeserializeVariable("access",include.access,include_node);
+					newTarget.includes.push_back(include);
+				}
+			}
+
+			if (node["libraries"]) {
+				for (auto lib_node : node["libraries"]) {
+					LibrarySettings library;
+					HelperFunctions::DeserializeVariable("path",library.path,lib_node);
+					HelperFunctions::DeserializeVariable("access",library.access,lib_node);
+					HelperFunctions::DeserializeVariable("debug_postfix",library.debugPostfix,lib_node);
+					HelperFunctions::DeserializeVariable("is_alias",library.isTargetName,lib_node);
+					newTarget.libraries.push_back(library);
+				}
+			}
+
+			if (node["external_repositories"]) {
+				for (auto repo_node : node["external_repositories"]) {
+					if (auto repo = CMakeGenerator::FindAliasInRepositories(repo_node.as<std::string>()); repo) {
+						newTarget.externalRepos.push_back(repo);
+					}
+				}
+			}
+
+
+		}
+	}
+
+
+}
+
+bool CMakeSerializer::RemoveSave(std::string name)
+{
+	if (m_SavedConfigs[name]) {
+		m_SavedConfigs.remove(name);
+		return true;
+	}
+	return false;
 }
 
 const YAML::Node& CMakeSerializer::GetSavedConfigs()

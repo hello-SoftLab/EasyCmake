@@ -223,12 +223,15 @@ void CMakeGenerator::ShowMainWindow()
 	
 	if (m_ShouldShowCustomPopup) {
 		bool shouldOpen = true;
-		if (ImGui::Begin((m_CustomPopupTitle + "##Custom" + HelperFunctions::GenerateStringHash(&m_Properties)).c_str(),&shouldOpen)) {
+		if (ImGui::Begin((m_CustomPopupTitle + "##Custom" + HelperFunctions::GenerateStringHash(&m_Properties)).c_str(),&shouldOpen,ImGuiWindowFlags_NoCollapse)) {
+
+
 
 			m_CustomPopupWidgets();
 
-			ImGui::End();
+
 		}
+		ImGui::End();
 
 		if (!shouldOpen) {
 			m_ShouldShowCustomPopup = false;
@@ -273,14 +276,26 @@ void CMakeGenerator::CloseCustomPopup()
 	m_ShouldShowCustomPopup = false;
 }
 
-bool CMakeGenerator::FindAliasInRepositories(std::string alias)
+void CMakeGenerator::ClearCurrentSettings()
+{
+	m_Properties = CmakeGeneratorProperties();
+}
+
+RepositoryHandle CMakeGenerator::FindAliasInRepositories(std::string alias)
 {
 	for (auto& repo : Repositories()) {
 		if (!repo) {
 			continue;
 		}
+
+		if (repo.Get()->m_Alias == alias) {
+			auto repository = RepositoryHandle();
+			repository.WatchPointer(repo);
+			return repository;
+		}
+
 	}
-	return false;
+	return {};
 }
 
 

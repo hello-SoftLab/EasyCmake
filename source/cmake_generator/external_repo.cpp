@@ -71,6 +71,20 @@ void ExternalRepository::SetupPopupWidgets()
 	
 }
 
+ExternalRepository::ExternalRepository() : Repository(HelperFunctions::GetClassName<ExternalRepository>())
+{
+
+}
+
+bool ExternalRepository::OnDeserialize(YAML::Node& node)
+{
+	HelperFunctions::DeserializeVariable("location",m_RepoLocation,node);
+	HelperFunctions::DeserializeVariable("git_tag",m_GitTag,node);
+	HelperFunctions::DeserializeVariable("should_build",m_ShouldBuild,node);
+	HelperFunctions::DeserializeVariable("cmake_args",m_CmakeArgs,node);
+	return true;
+}
+
 YAML::Node ExternalRepository::OnSerialize()
 {
 	YAML::Node node;

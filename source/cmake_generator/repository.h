@@ -8,7 +8,7 @@
 
 class Repository {
 public:
-	Repository();
+	Repository(std::string type);
 
 	virtual void SetupPopupWidgets();
 	bool CheckRepoValidity();
@@ -40,6 +40,7 @@ protected:
 	virtual YAML::Node OnSerialize();
 	virtual bool IsRepoReady();
 
+	std::string m_Type;
 	std::string m_SourcesToAdd = "";
 	std::vector<IncludeSettings> m_Includes;
 	std::vector<LibrarySettings> m_Libraries;
