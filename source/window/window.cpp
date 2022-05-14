@@ -173,7 +173,7 @@ void Window::ShowGUI()
                         if (ImGui::BeginTable(("TableFor" + HelperFunctions::GenerateStringHash(&chosenSaveForDeserialization)).c_str(),2,ImGuiTableFlags_BordersOuter | ImGuiTableFlags_SizingStretchSame)) {
                             int index = 0;
                             ImGui::TableSetupColumn("first",0,10);
-                            ImGui::TableSetupColumn("second", 0, 1);
+                            ImGui::TableSetupColumn("second", 0, 0.2);
                             
                             std::string configToRemove = "";
                             for (auto& config : CMakeSerializer::GetSavedConfigs()) {
@@ -182,6 +182,25 @@ void Window::ShowGUI()
                                 if (ImGui::Selectable(config.first.as<std::string>().c_str(), selected)) {
                                     chosenSaveForDeserialization = config.first.as<std::string>();
                                 }
+                                if (ImGui::IsItemHovered()) {
+                                    std::string toolTip = "";
+
+                                    toolTip += R"(project name = )" + fmt::format("{}", config.second["project_name"].as<std::string>()) + R"(
+cmake version = )" + fmt::format("{}\n", config.second["cmake_version"].as<std::string>());
+
+                                    if (config.second["targets"]) {
+                                        toolTip += R"(
+number of targets = )" + fmt::format("{}", config.second["targets"].size());
+                                    }
+
+                                    if (config.second["repositories"]) {
+                                        toolTip += R"(
+number of external repos = )" + fmt::format("{}", config.second["repositories"].size());
+                                    }
+
+
+                                    ImGui::SetTooltip(toolTip.c_str());
+                                }
 
                                 ImGui::TableNextColumn();
 
@@ -189,6 +208,8 @@ void Window::ShowGUI()
                                 if (ImGui::Selectable(("X##" + std::to_string(std::hash<int>()(index))).c_str())) {
                                     configToRemove = config.first.as<std::string>();
                                 }
+                               
+
                                 index++;
                             }
                             if (configToRemove != "") {

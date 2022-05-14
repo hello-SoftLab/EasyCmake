@@ -10,7 +10,7 @@ int main() {
 
 	CMakeSerializer::LoadConfigsFromFile("save_files.yaml");
 	window.OnClosing().Connect([](){
-		DEBUG_LOG("Saving...");
+		//DEBUG_LOG("Saving...");
 		CMakeSerializer::SaveCurrentConfigsToFile("save_files.yaml");
 	});
 	

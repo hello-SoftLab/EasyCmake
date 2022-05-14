@@ -6,7 +6,7 @@
 
 void CMakeGenerator::ShowMainWindow()
 {
-	ImGui::ShowDemoWindow();
+	//ImGui::ShowDemoWindow();
 
 	ImGui::Begin("CmakeWindow",0,ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize );
 
@@ -18,7 +18,7 @@ void CMakeGenerator::ShowMainWindow()
 
 		ImGui::TableNextColumn();
 
-		ImGui::TextWrapped(("Current Directory: " + m_Properties.currentDirectory).c_str());
+		ImGui::TextWrapped(("Target Directory: " + m_Properties.currentDirectory).c_str());
 
 		ImGui::TableNextColumn();
 
@@ -32,6 +32,33 @@ void CMakeGenerator::ShowMainWindow()
 			nfdresult_t result = NFD::PickFolder(outPath,m_Properties.currentDirectory.c_str());
 
 			if (result == NFD_OKAY) {
+				/*
+				CustomPopupProperties prop;
+				prop.title = "Warning";
+				prop.initialSize = ImVec2(300,100);
+				std::string path = outPath.get();
+				CMakeGenerator::ShowCustomPopup(prop, [=]() {
+					
+					ImGui::TextWrapped("Do you wish to transfer your current work to the new directory?");
+					
+					if (ImGui::Button("Yes")) {
+						CMakeSerializer::SaveCurrentToCache();
+						//CMakeGenerator::ClearCurrentSettings();
+						m_Properties.currentDirectory = path;
+						CMakeSerializer::LoadCurrentFromCache();
+						CMakeGenerator::CloseCustomPopup();
+					}
+					ImGui::SameLine();
+					if (ImGui::Button("No")) {
+						CMakeSerializer::SaveCurrentToCache();
+						CMakeGenerator::ClearCurrentSettings();
+						m_Properties.currentDirectory = path;
+						CMakeSerializer::LoadCurrentFromCache();
+						CMakeGenerator::CloseCustomPopup();
+					}
+				
+				});
+				*/
 				CMakeSerializer::SaveCurrentToCache();
 				CMakeGenerator::ClearCurrentSettings();
 				m_Properties.currentDirectory = outPath.get();
