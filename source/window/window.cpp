@@ -111,10 +111,18 @@ void Window::ShowGUI()
     if (ImGui::BeginMainMenuBar()) {
         if (ImGui::BeginMenu("File")) {
 
+            if (ImGui::MenuItem("Reset Current")) {
+                CMakeGenerator::ClearCurrentSettings();
+            }
+
+            ImGui::Separator();
+
             if (ImGui::MenuItem("Save As")) {
                 static std::string saveNameForSerialization = "";
                 saveNameForSerialization = "";
-                CMakeGenerator::ShowCustomPopup("Please Choose a Save Name", [&]() {
+                CustomPopupProperties prop;
+                prop.title = "Please Choose a Save Name";
+                CMakeGenerator::ShowCustomPopup(prop, [&]() {
                     
 
                     if (ImGui::BeginTable(("SavingConfigTable"),2)) {
@@ -147,14 +155,17 @@ void Window::ShowGUI()
                 });
             }
 
+            ImGui::Separator();
+
             if (ImGui::MenuItem("Load")) {
                 if (CMakeSerializer::GetSavedConfigs().size() > 0) {
                     static std::string chosenSaveForDeserialization = "";
                     chosenSaveForDeserialization = "";
-                    CMakeGenerator::ShowCustomPopup("Saved Configurations", [&]() {
-                        
+                    CustomPopupProperties prop;
+                    prop.title = "Saved Configurations";
+                    prop.initialSize = ImVec2(300,300);
+                    CMakeGenerator::ShowCustomPopup(prop, [&]() {
 
-                       
                         ImGui::PushStyleColor(ImGuiCol_Header,Color(50,50,50).AsImVec4());
                         ImGui::Selectable("Please choose a save",true,ImGuiSelectableFlags_SpanAvailWidth);
                         ImGui::PopStyleColor();
@@ -164,6 +175,7 @@ void Window::ShowGUI()
                             ImGui::TableSetupColumn("first",0,10);
                             ImGui::TableSetupColumn("second", 0, 1);
                             
+                            std::string configToRemove = "";
                             for (auto& config : CMakeSerializer::GetSavedConfigs()) {
                                 ImGui::TableNextColumn();
                                 const bool selected = chosenSaveForDeserialization == config.first.as<std::string>();
@@ -175,15 +187,21 @@ void Window::ShowGUI()
 
                                 ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
                                 if (ImGui::Selectable(("X##" + std::to_string(std::hash<int>()(index))).c_str())) {
-                                    CMakeSerializer::RemoveSave(config.first.as<std::string>());
+                                    configToRemove = config.first.as<std::string>();
                                 }
                                 index++;
                             }
+                            if (configToRemove != "") {
+                                CMakeSerializer::RemoveSave(configToRemove);
+                            }
+
                             ImGui::EndTable();
                         }
 
                         if (chosenSaveForDeserialization != "") {
-                            ImGui::SetCursorPos(ImVec2(ImGui::CalcTextSize("A").x, ImGui::GetWindowSize().y - (ImGui::CalcTextSize("A").y * 2)));
+                            
+
+                            ImGui::SetCursorPos(ImVec2(ImGui::CalcTextSize("A").x, ImGui::GetWindowSize().y - (ImGui::CalcTextSize("A").y * 2 + 1)));
                             if (ImGui::Button("Load")) {
                                 CMakeSerializer::DeserializeSavedConfig(chosenSaveForDeserialization);
                             }

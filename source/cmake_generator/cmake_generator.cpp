@@ -32,7 +32,10 @@ void CMakeGenerator::ShowMainWindow()
 			nfdresult_t result = NFD::PickFolder(outPath,m_Properties.currentDirectory.c_str());
 
 			if (result == NFD_OKAY) {
+				CMakeSerializer::SaveCurrentToCache();
+				CMakeGenerator::ClearCurrentSettings();
 				m_Properties.currentDirectory = outPath.get();
+				CMakeSerializer::LoadCurrentFromCache();
 			}
 		}
 
@@ -223,7 +226,9 @@ void CMakeGenerator::ShowMainWindow()
 	
 	if (m_ShouldShowCustomPopup) {
 		bool shouldOpen = true;
-		if (ImGui::Begin((m_CustomPopupTitle + "##Custom" + HelperFunctions::GenerateStringHash(&m_Properties)).c_str(),&shouldOpen,ImGuiWindowFlags_NoCollapse)) {
+		
+		ImGui::SetNextWindowSize(m_CustomPopupProperties.initialSize,ImGuiCond_Once);
+		if (ImGui::Begin((m_CustomPopupProperties.title + "##Custom" + HelperFunctions::GenerateStringHash(&m_Properties)).c_str(), &shouldOpen, m_CustomPopupProperties.flags)) {
 
 
 
@@ -264,11 +269,13 @@ void CMakeGenerator::ShowErrorPopup(std::string errorMsg)
 	m_ShouldShowErrorPopup = true;
 }
 
-void CMakeGenerator::ShowCustomPopup(std::string name, std::function<void()> widgetsFunc)
+
+
+void CMakeGenerator::ShowCustomPopup(CustomPopupProperties prop, std::function<void()> widgetsFunc)
 {
 	m_ShouldShowCustomPopup = true;
 	m_CustomPopupWidgets = widgetsFunc;
-	m_CustomPopupTitle = name;
+	m_CustomPopupProperties = prop;
 }
 
 void CMakeGenerator::CloseCustomPopup()
@@ -278,7 +285,9 @@ void CMakeGenerator::CloseCustomPopup()
 
 void CMakeGenerator::ClearCurrentSettings()
 {
+	std::string currentDir = m_Properties.currentDirectory;
 	m_Properties = CmakeGeneratorProperties();
+	m_Properties.currentDirectory = currentDir;
 }
 
 RepositoryHandle CMakeGenerator::FindAliasInRepositories(std::string alias)
