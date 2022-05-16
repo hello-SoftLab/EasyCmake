@@ -9,11 +9,13 @@ public:
 
 	static void Init();
 	
-	
+	static bool AddRepoToRecent(RepositoryHandle handle);
 	static bool SerializeToSave(std::string name);
 	static bool DeserializeSavedConfig(std::string name);
 	static bool RemoveSave(std::string name);
+	static std::string GetSaveStringRepresentation(std::string name);
 	static const YAML::Node& GetSavedConfigs();
+	static const YAML::Node& GetRecentRepositories();
 
 	static bool HasDirectoryBeenUsedBefore();
 
@@ -24,6 +26,10 @@ public:
 	static bool LoadCurrentFromCache();
 
 private:
+
+	static bool InitRecentRepositories();
+
+
 	static bool SaveCurrentConfigsToFile(std::string fileName);
 	static bool LoadConfigsFromFile(std::string fileName);
 
@@ -33,6 +39,8 @@ private:
 	static bool DeserializeFromNode(YAML::Node& node);
 	static YAML::Node SerializeToNode();
 
+
+	static inline YAML::Node m_RecentRepositories;
 	static inline YAML::Node m_SavedDirectories;
 	static inline YAML::Node m_Cache;
 	static inline YAML::Node m_SavedConfigs;

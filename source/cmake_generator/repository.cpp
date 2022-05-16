@@ -1,6 +1,6 @@
 #include "repository.h"
 #include "cmake_generator.h"
-
+#include "external_repo.h"
 
 Repository::Repository(std::string type) : m_Type(type)
 {
@@ -165,3 +165,70 @@ const std::vector<LibrarySettings>& Repository::GetLibraries() const
 	return m_Libraries;
 }
 
+std::string Repository::GetStringRepresentation(const YAML::Node& node)
+{
+	std::string returnStr = "";
+
+	if (!node) {
+		return "";
+	}
+	
+	if (node["alias"]) {
+		returnStr += fmt::format(R"(Repository Alias: {}
+)",node["alias"].as<std::string>());
+	}
+
+	if (node["sources"]) {
+		if (node["sources"].as<std::string>() != "") {
+			returnStr += R"(
+Source Files:
+)";
+			for (auto& file : HelperFunctions::SplitString(node["sources"].as<std::string>(),"\n")) {
+				returnStr += fmt::format(R"(
+	-> "{}")",file);
+			}
+		}
+	}
+
+	if (node["includes"]) {
+		returnStr += R"(
+Includes:
+)";
+		for (auto include : node["includes"]) {
+			returnStr += fmt::format(R"(
+	-> Path: "{}"
+	   Access: "{}"
+)",include["path"].as<std::string>(),include["access"].as<std::string>());
+		}
+	}
+
+	if (node["libraries"]) {
+		returnStr += R"(
+Libraries:
+)";
+		for (auto library : node["libraries"]) {
+			returnStr += fmt::format(R"(
+	-> Path: "{}"
+	   Access: "{}"
+	   Debug Postfix: "{}"
+)",library["path"].as<std::string>(),library["access"].as<std::string>(),library["debug_postfix"].as<std::string>());
+		}
+	}
+
+	return returnStr;
+
+}
+
+bool RepositoryHandle::LoadFromSave(YAML::Node& node)
+{
+	if (node["type"]) {
+		if (node["type"].as<std::string>() == HelperFunctions::GetClassName<ExternalRepository>()) {
+			this->HoldType<ExternalRepository>();
+			this->Get()->Deserialize(node);
+			return true;
+		}
+		return false;
+	}
+	return false;
+
+}

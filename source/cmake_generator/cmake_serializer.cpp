@@ -242,6 +242,29 @@ fmt::format("{}/",name) + fmt::format("{})\n", include.path);
 	return true;
 }
 
+bool CMakeSerializer::InitRecentRepositories()
+{
+	if (std::filesystem::exists("recent_repos.yaml")) {
+		m_RecentRepositories = YAML::LoadFile("recent_repos.yaml");
+	}
+
+	Window::GetCurrentWindow().OnClosing().Connect([]() {
+		std::ofstream stream;
+
+		stream.open("recent_repos.yaml");
+
+		if (!stream.is_open()) {
+			return;
+		}
+
+		stream << m_RecentRepositories;
+
+		stream.close();
+
+	});
+	return true;
+}
+
 bool CMakeSerializer::SaveCurrentConfigsToFile(std::string fileName)
 {
 
@@ -302,12 +325,27 @@ void CMakeSerializer::Init()
 	CMakeSerializer::LoadConfigsFromFile("save_files.yaml");
 	CMakeSerializer::LoadCurrentSavedDirectoriesFromFile("saved_directories.yaml");
 
+	CMakeSerializer::InitRecentRepositories();
 
 	Window::GetCurrentWindow().OnClosing().Connect([]() {
 		//DEBUG_LOG("Saving...");
 		CMakeSerializer::SaveCurrentSavedDiretoriesToFile("saved_directories.yaml");
 		CMakeSerializer::SaveCurrentConfigsToFile("save_files.yaml");
+		
+
+
 		});
+}
+
+bool CMakeSerializer::AddRepoToRecent(RepositoryHandle handle)
+{
+	if (!handle) {
+		return false;
+	}
+
+	m_RecentRepositories[handle.Get()->GetAlias()] = handle.Get()->Serialize();
+
+	return true;
 }
 
 bool CMakeSerializer::SerializeToSave(std::string name)
@@ -349,9 +387,63 @@ bool CMakeSerializer::RemoveSave(std::string name)
 	return false;
 }
 
+std::string CMakeSerializer::GetSaveStringRepresentation(std::string name)
+{
+	if (!m_SavedConfigs[name]) {
+		return "";
+	}
+	
+	std::string returnStr = "";
+
+	YAML::Node node = m_SavedConfigs[name];
+	
+	if (node["project_name"]) {
+		returnStr += fmt::format(R"(Project Name: {}
+)",node["project_name"].as<std::string>());
+	}
+
+	if (node["cmake_version"]) {
+		returnStr += fmt::format(R"(CMake Version: {})",node["cmake_version"].as<std::string>());
+	}
+
+	if (node["targets"]) {
+		returnStr += R"(
+Targets:)";
+		for (auto target : node["targets"]) {
+			returnStr += fmt::format(R"(
+	-> {})",target["name"].as<std::string>());
+		}
+	}
+
+	if (node["subdirectories"]) {
+		returnStr += R"(
+Subdirectories:)";
+		for (auto subdir : node["subdirectories"]) {
+			returnStr += fmt::format(R"(
+	-> {})",subdir.as<std::string>());
+		}
+	}
+
+	if (node["repositories"]) {
+		returnStr += R"(
+External Repos:)";
+		for (auto repo : node["repositories"]) {
+			returnStr += fmt::format(R"(
+	-> {})", repo["alias"].as<std::string>());
+		}
+	}
+	
+	return returnStr;
+}
+
 const YAML::Node& CMakeSerializer::GetSavedConfigs()
 {
 	return m_SavedConfigs;
+}
+
+const YAML::Node& CMakeSerializer::GetRecentRepositories()
+{
+	return m_RecentRepositories;
 }
 
 bool CMakeSerializer::HasDirectoryBeenUsedBefore()

@@ -126,15 +126,13 @@ void Window::ShowGUI()
                 prop.title = "Please Choose a Save Name";
                 prop.widgetFunc = [&]() {
                     
-                    if (ImGui::BeginTable("TableForConfigLoadingOverwriting",1,ImGuiTableFlags_BordersOuter)) {
+                    ImGui::Text("Current Configurations");
+                    ImGui::BeginChild("ChildForLoadingConfigOverwriting",ImVec2(ImGui::GetWindowSize().x - ImGui::GetCursorPosX(),70),true,ImGuiWindowFlags_AlwaysVerticalScrollbar);
 
-                        ImGui::TableNextColumn();
-                            
-                        ImGui::PushStyleColor(ImGuiCol_Header, Color(50, 50, 50).AsImVec4());
-                        ImGui::Selectable("Current Configurations", true, ImGuiSelectableFlags_Disabled | ImGuiSelectableFlags_SpanAvailWidth);
-                        ImGui::PopStyleColor();
+                    if (ImGui::BeginTable("TableForConfigLoadingOverwriting",1)) {
 
                         bool foundAnyEqual = false;
+                        std::string deletionConfig = "";
                         for (auto& config : CMakeSerializer::GetSavedConfigs()) {
                             ImGui::TableNextColumn();
 
@@ -145,11 +143,29 @@ void Window::ShowGUI()
                                 
                             }
 
+                            if (ImGui::IsItemHovered()) {
+                                std::string toolTip = CMakeSerializer::GetSaveStringRepresentation(config.first.as<std::string>());
+
+                                ImGui::SetTooltip(toolTip.c_str());
+                            }
+                            if (ImGui::BeginPopupContextItem()) {
+                                if (ImGui::MenuItem("Delete")) {
+                                    deletionConfig = config.first.as<std::string>();
+                                }
+                                
+                                ImGui::EndPopup();
+                            }
+
+
                             if (selected) {
                                 isSaveNameForOverwriting = true;
                                 foundAnyEqual = true;
                             }
 
+                        }
+
+                        if (deletionConfig != "") {
+                            CMakeSerializer::RemoveSave(deletionConfig);
                         }
 
                         if (!foundAnyEqual) {
@@ -158,6 +174,10 @@ void Window::ShowGUI()
 
                         ImGui::EndTable();
                     }
+
+                    
+
+                    ImGui::EndChild();
 
                     if (ImGui::BeginTable(("SavingConfigTable"),2)) {
 
@@ -177,9 +197,12 @@ void Window::ShowGUI()
 
                     std::string buttonTitle = isSaveNameForOverwriting ? "Overwrite" : "Ok";
 
-                    ImGui::SetCursorPos(ImVec2(2, ImGui::GetWindowSize().y - (ImGui::CalcTextSize("A").y * 2 - 1)));
+                    ImGui::SetCursorPos(ImVec2(2, ImGui::GetWindowSize().y - (ImGui::CalcTextSize("A").y * 2 - 2)));
 
                     if (ImGui::Button(buttonTitle.c_str())) {
+                        if (isSaveNameForOverwriting) {
+                            CMakeSerializer::RemoveSave(saveNameForSerialization);
+                        }
                         CMakeSerializer::SerializeToSave(saveNameForSerialization);
                         CMakeGenerator::CloseCustomPopup();
                     }
@@ -222,21 +245,7 @@ void Window::ShowGUI()
                                     chosenSaveForDeserialization = config.first.as<std::string>();
                                 }
                                 if (ImGui::IsItemHovered()) {
-                                    std::string toolTip = "";
-
-                                    toolTip += R"(project name = )" + fmt::format("{}", config.second["project_name"].as<std::string>()) + R"(
-cmake version = )" + fmt::format("{}\n", config.second["cmake_version"].as<std::string>());
-
-                                    if (config.second["targets"]) {
-                                        toolTip += R"(
-number of targets = )" + fmt::format("{}", config.second["targets"].size());
-                                    }
-
-                                    if (config.second["repositories"]) {
-                                        toolTip += R"(
-number of external repos = )" + fmt::format("{}", config.second["repositories"].size());
-                                    }
-
+                                    std::string toolTip = CMakeSerializer::GetSaveStringRepresentation(config.first.as<std::string>());
 
                                     ImGui::SetTooltip(toolTip.c_str());
                                 }

@@ -69,7 +69,7 @@ void CMakeGenerator::ShowMainWindow()
 				if (CMakeSerializer::HasDirectoryBeenUsedBefore()) {
 					CustomPopupProperties prop;
 					prop.title = "Warning";
-					prop.initialSize = ImVec2(300, 100);
+					prop.initialSize = ImVec2(300, 200);
 					prop.widgetFunc = [=]() {
 
 						ImGui::TextWrapped("A CMakeLists.txt was already created on this directory with EasyCmake. Do you wish to load the last used configurations?");
@@ -457,6 +457,7 @@ void CMakeGenerator::ShowPopupForRepo(RepositoryHandle& repo)
 					if (repo == m_Properties.tempRepo) {
 						RepositoryHandle& newRepo = m_Properties.repositories.emplace_back();
 						newRepo = repo;
+						CMakeSerializer::AddRepoToRecent(newRepo);
 						m_Properties.tempRepo.ClearCurrentType();
 					}
 				}
@@ -506,15 +507,37 @@ void CMakeGenerator::ShowRepoCreateMenu()
 
 		if (ImGui::MenuItem("Git Repo")) {
 			m_Properties.tempRepo.HoldType<ExternalRepository>();
-			
 			m_Properties.tempRepo.Get()->OpenPopup();
-			
 		}
 
 		if (ImGui::MenuItem("Installed Package")) {
 
 		}
 
+		if (CMakeSerializer::GetRecentRepositories().size() != 0) {
+			if (ImGui::BeginMenu("Recent")) {
+				for (auto repo : CMakeSerializer::GetRecentRepositories()) {
+
+					if (ImGui::MenuItem(repo.first.as<std::string>().c_str())) {
+						RepositoryHandle& handle = m_Properties.repositories.emplace_back();
+						if (!handle.LoadFromSave(repo.second)) {
+							m_Properties.repositories.pop_back();
+						}
+
+					}
+					if (ImGui::IsItemHovered()) {
+						std::string tooltipData;
+
+						tooltipData += Repository::GetStringRepresentation(repo.second);
+
+						ImGui::SetTooltip(tooltipData.c_str());
+					}
+
+				}
+				ImGui::EndMenu();
+			}
+
+		}
 
 		ImGui::EndMenu();
 	}

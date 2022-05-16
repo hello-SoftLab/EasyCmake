@@ -34,6 +34,8 @@ public:
 	const std::vector<IncludeSettings>& GetIncludes() const;
 	std::vector<std::string> GetSources() const;
 	const std::vector<LibrarySettings>& GetLibraries() const;
+	
+	static std::string GetStringRepresentation(const YAML::Node& node);
 
 protected:
 	virtual bool OnDeserialize(YAML::Node& node);
@@ -52,6 +54,9 @@ private:
 };
 
 class RepositoryHandle : public PointerHolder<Repository> {
+public:
+	bool LoadFromSave(YAML::Node& node);
+
 
 };
 
