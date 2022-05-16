@@ -83,7 +83,7 @@ private:
 	
 	static void ShowPopupForRepo(RepositoryHandle& handle);
 	static void ValidateRepos();
-	static void ShowRepoCreateMenu();
+	static bool ShowRepoCreateMenu();
 	
 	static bool ValidateInputs();
 	

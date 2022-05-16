@@ -13,6 +13,14 @@ void LibrarySettings::ShowWidgets(std::vector<LibrarySettings>& libraries)
 
 			ImGui::TableNextColumn();
 
+			ImGui::Text("Is Variable Name");
+
+			ImGui::TableNextColumn();
+
+			ImGui::Checkbox(("##CheckboxForLib" + HelperFunctions::GenerateStringHash(&library)).c_str(),&library.isVariableName);
+
+			ImGui::TableNextColumn();
+
 			ImGui::Text("Acess");
 
 			ImGui::TableNextColumn();

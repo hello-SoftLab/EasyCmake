@@ -3,6 +3,7 @@
 #include <fstream>
 #include "cmake_generator.h"
 #include "../window/window.h"
+#include "installed_package.h"
 
 bool CMakeSerializer::GenerateCMakeLists(const CmakeGeneratorProperties& prop)
 {
@@ -122,7 +123,7 @@ add_executable()" + fmt::format("{}\n\n",target.Get()->name);
 			}
 			for (auto& location : repo.Get()->GetSources()) {
 				stringToAdd += R"(
-	${PROJECT_SOURCE_DIR}/vendor/)" + fmt::format("{}/",repo.Get()->GetAlias()) + fmt::format("{}",location);
+	${PROJECT_SOURCE_DIR}/vendor/)" + fmt::format("{}/",repo.Get()->GetAlias()) + fmt::format("{}\n",location);
 			}
 			if (repo.Get()->GetLibraries().size() > 0) {
 				for (auto& library : repo.Get()->GetLibraries()) {
@@ -186,14 +187,24 @@ target_link_libraries()" + fmt::format("{} ",target.Get()->name) + fmt::format("
 				stringToAdd += R"(
 target_link_libraries()" + fmt::format("{} ", target.Get()->name) + fmt::format("{} ", library.access);
 
-				std::string libraryName = library.path;
+				if (library.isVariableName) {
+					stringToAdd += fmt::format("{})\n",library.path);
+					continue;
+				}
+				std::string libraryName = "";
 
 				if (size_t location = library.path.find_last_of('/'); location != std::string::npos) {
-					libraryName = library.path.substr(0, location);
+					libraryName = library.path.substr(0, location + 1);
 					libraryName += "${CMAKE_STATIC_LIBRARY_PREFIX}";
-					libraryName += fmt::format("{}$<$<CONFIG:Debug>:{}>", library.path.substr(location), library.debugPostfix);
+					libraryName += fmt::format("{}$<$<CONFIG:Debug>:{}>", library.path.substr(location + 1), library.debugPostfix);
 					libraryName += "${CMAKE_STATIC_LIBRARY_SUFFIX}";
 				}
+				else {
+					libraryName += "${CMAKE_STATIC_LIBRARY_PREFIX}";
+					libraryName += fmt::format("{}$<$<CONFIG:Debug>:{}>",library.path, library.debugPostfix);
+					libraryName += "${CMAKE_STATIC_LIBRARY_SUFFIX}";
+				}
+				
 
 				stringToAdd += R"(${PROJECT_SOURCE_DIR}/vendor/)" + fmt::format("{}/", name) + libraryName + ")\n";
 				
@@ -515,6 +526,10 @@ bool CMakeSerializer::DeserializeFromNode(YAML::Node& mainNode)
 			if (type == HelperFunctions::GetClassName<ExternalRepository>()) {
 				repo.HoldType<ExternalRepository>();
 			}
+			if (type == HelperFunctions::GetClassName<InstalledPackage>()) {
+				repo.HoldType<InstalledPackage>();
+			}
+
 
 			if (!repo) {
 				continue;

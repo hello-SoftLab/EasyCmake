@@ -363,6 +363,8 @@ list(APPEND ${PROJECT_NAME}_SOURCE_FILES ${PROJECT_SOURCE_DIR}/source/cmake_gene
 
 list(APPEND ${PROJECT_NAME}_SOURCE_FILES ${PROJECT_SOURCE_DIR}/source/cmake_generator/subdirectory_settings.cpp)
 
+list(APPEND ${PROJECT_NAME}_SOURCE_FILES ${PROJECT_SOURCE_DIR}/source/cmake_generator/installed_package.cpp)
+
 
 #creating executable
 add_executable(${PROJECT_NAME}

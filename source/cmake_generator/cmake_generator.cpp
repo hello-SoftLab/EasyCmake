@@ -3,12 +3,13 @@
 #include <format>
 #include "../../vendor/dialog/include/nfd.hpp"
 #include "cmake_serializer.h"
+#include "installed_package.h"
 
 void CMakeGenerator::ShowMainWindow()
 {
 	//ImGui::ShowDemoWindow();
 
-	ImGui::Begin("CmakeWindow",0,ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize );
+	ImGui::Begin("CmakeWindow",0,ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |ImGuiWindowFlags_NoBringToFrontOnFocus );
 
 	ImGui::BeginChild("CmakeWindowNormalSettings",ImVec2(0,ImGui::GetContentRegionAvail().y - 25),true);
 
@@ -76,12 +77,15 @@ void CMakeGenerator::ShowMainWindow()
 
 
 						ImGui::SetCursorPos(ImVec2(5,ImGui::GetWindowSize().y - (ImGui::CalcTextSize("A").y * 2 - 1)));
-						if (ImGui::Button("Yes")) {
+						if (ImGui::Button("Yes") || ImGui::IsKeyPressed(ImGuiKey_Enter)) {
 							CMakeSerializer::LoadCurrentFromSavedDirectories();
 							CMakeGenerator::CloseCustomPopup();
 						}
+
+						
+
 						ImGui::SameLine();
-						if (ImGui::Button("No")) {
+						if (ImGui::Button("No") || ImGui::IsKeyPressed(ImGuiKey_Escape)) {
 							CMakeSerializer::LoadCurrentFromCache();
 							CMakeGenerator::CloseCustomPopup();
 						}
@@ -136,6 +140,8 @@ void CMakeGenerator::ShowMainWindow()
 
 			//ImGui::TableNextColumn();
 
+			
+
 			auto it = m_Properties.repositories.begin();
 			while (it != m_Properties.repositories.end()) {
 
@@ -153,7 +159,11 @@ void CMakeGenerator::ShowMainWindow()
 
 				if (ImGui::BeginPopupContextItem(("##" + HelperFunctions::GenerateStringHash(repo.Get())).c_str())) {
 
-					ShowRepoCreateMenu();
+					if (!ShowRepoCreateMenu()) {
+						it = m_Properties.repositories.end();
+						ImGui::EndPopup();
+						continue;
+					}
 
 					if (ImGui::MenuItem("Modify")) {
 						//m_Properties.tempRepo = repo;
@@ -169,8 +179,9 @@ void CMakeGenerator::ShowMainWindow()
 
 					ImGui::EndPopup();
 				}
-
+				
 				it++;
+				
 			}
 
 			
@@ -244,7 +255,7 @@ void CMakeGenerator::ShowMainWindow()
 
 				ImGui::Text("Successfully written to CMakeLists.txt!");
 
-				if (ImGui::Button("Ok")) {
+				if (ImGui::Button("Ok") || ImGui::IsKeyPressed(ImGuiKey_Enter) || ImGui::IsKeyPressed(ImGuiKey_Escape)) {
 					ImGui::CloseCurrentPopup();
 				}
 
@@ -312,7 +323,7 @@ void CMakeGenerator::ShowMainWindow()
 		bool shouldOpen = true;
 		
 		ImGui::SetNextWindowSize(m_CustomPopupProperties.initialSize,ImGuiCond_Once);
-		if (ImGui::Begin((m_CustomPopupProperties.title + "##Custom" + HelperFunctions::GenerateStringHash(&m_Properties)).c_str(), &shouldOpen, m_CustomPopupProperties.flags)) {
+		if (ImGui::Begin((m_CustomPopupProperties.title + "##Custom" + HelperFunctions::GenerateStringHash(&m_Properties)).c_str(), &shouldOpen, m_CustomPopupProperties.flags )) {
 
 
 
@@ -424,7 +435,7 @@ void CMakeGenerator::ShowPopupForRepo(RepositoryHandle& repo)
 			
 			ImGui::TableNextColumn();
 
-			ImGui::Text("Name*");
+			ImGui::Text("Alias*");
 
 			ImGui::TableNextColumn();
 
@@ -501,8 +512,11 @@ void CMakeGenerator::ValidateRepos()
 
 }
 
-void CMakeGenerator::ShowRepoCreateMenu()
+bool CMakeGenerator::ShowRepoCreateMenu()
 {
+
+	bool returnVal = true;
+
 	if (ImGui::BeginMenu("Create")) {
 
 		if (ImGui::MenuItem("Git Repo")) {
@@ -511,7 +525,8 @@ void CMakeGenerator::ShowRepoCreateMenu()
 		}
 
 		if (ImGui::MenuItem("Installed Package")) {
-
+			m_Properties.tempRepo.HoldType<InstalledPackage>();
+			m_Properties.tempRepo.Get()->OpenPopup();
 		}
 
 		if (CMakeSerializer::GetRecentRepositories().size() != 0) {
@@ -523,6 +538,7 @@ void CMakeGenerator::ShowRepoCreateMenu()
 						if (!handle.LoadFromSave(repo.second)) {
 							m_Properties.repositories.pop_back();
 						}
+						returnVal = false;
 
 					}
 					if (ImGui::IsItemHovered()) {
@@ -541,6 +557,8 @@ void CMakeGenerator::ShowRepoCreateMenu()
 
 		ImGui::EndMenu();
 	}
+
+	return returnVal;
 }
 
 bool CMakeGenerator::ValidateInputs()
@@ -640,9 +658,66 @@ void TargetGenerator::ShowWidgets()
 
 		ImGui::Text("Source Files");
 
+		ImGui::Dummy(ImVec2(0,65));
+
+		if (ImGui::Button("Add Files")) {
+			NFD::Guard nfdGuard;
+
+			// auto-freeing memory
+			NFD::UniquePathSet outPath;
+
+			nfdfilteritem_t filterItem[2] = { {"Source code", "c,cpp,cc"}};
+
+
+			nfdresult_t result = NFD::OpenDialogMultiple(outPath,filterItem,1, CMakeGenerator::Settings().currentDirectory.c_str());
+
+			if (result == NFD_OKAY) {
+				nfdpathsetsize_t numPaths;
+				NFD::PathSet::Count(outPath, numPaths);
+
+				nfdpathsetsize_t i;
+				for (i = 0; i < numPaths; ++i) {
+					NFD::UniquePathSetPath path;
+					NFD::PathSet::GetPath(outPath, i, path);
+					std::string correctPath = path.get();
+					std::filesystem::path relativePath = std::filesystem::relative(correctPath, { CMakeGenerator::Settings().currentDirectory });
+					correctPath = relativePath.string();
+					std::replace(correctPath.begin(), correctPath.end(), '\\', '/');
+					HelperFunctions::StringReplace(correctPath,R"(\)","/");
+					sourceFiles += correctPath;
+					sourceFiles += "\n";
+				}
+
+			}
+		}
+		ImGui::SameLine();
+
+		if (ImGui::Button("Add All From Directory")) {
+			NFD::Guard nfdGuard;
+
+			// auto-freeing memory
+			NFD::UniquePath outPath;
+
+			nfdresult_t result = NFD::PickFolder(outPath, CMakeGenerator::Settings().currentDirectory.c_str());
+
+			if (result == NFD_OKAY) {
+				for (auto file : std::filesystem::recursive_directory_iterator(outPath.get())) {
+					if (file.path().extension() == ".c" || file.path().extension() == ".cpp" || file.path().extension() == ".cc") {
+						std::filesystem::path path = std::filesystem::relative(file.path(), {CMakeGenerator::Settings().currentDirectory});
+						std::string correctPath = path.string();
+						std::replace(correctPath.begin(), correctPath.end(), '\\', '/');
+						sourceFiles += correctPath;
+						sourceFiles += "\n";
+					}
+				}
+			}
+
+		}
+
 		ImGui::TableNextColumn();
 
 		ImGui::InputTextMultiline("##SourceFilesMultiline", &sourceFiles, ImVec2(ImGui::GetContentRegionAvail().x, 0));
+
 
 		ImGui::TableNextColumn();
 		
@@ -690,10 +765,12 @@ void TargetGenerator::ShowWidgets()
 
 					ImGui::SameLine();
 
+					
+
 					ImGui::Text((repo.Get()->GetAlias() + " ( " 
-					+ std::to_string(repo.Get()->GetNumberOf("sources")) + " source file" + (repo.Get()->GetNumberOf("sources") == 1? "": "s") + ", "
-					+ std::to_string(repo.Get()->GetNumberOf("includes")) + " include" + (repo.Get()->GetNumberOf("includes") == 1 ? "" : "s") + ", "
-					+ std::to_string(repo.Get()->GetNumberOf("libraries")) + " librar" + (repo.Get()->GetNumberOf("libraries") == 1 ? "y" : "ies")  + " )"
+					+ std::to_string(repo.Get()->GetSources().size()) + " source file" + (repo.Get()->GetSources().size() == 1 ? "" : "s") + ", "
+					+ std::to_string(repo.Get()->GetIncludes().size()) + " include" + (repo.Get()->GetIncludes().size() == 1 ? "" : "s") + ", "
+					+ std::to_string(repo.Get()->GetIncludes().size()) + " librar" + (repo.Get()->GetIncludes().size() == 1 ? "y" : "ies") + " )"
 					).c_str());
 
 				}

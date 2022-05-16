@@ -1,6 +1,7 @@
 #include "repository.h"
 #include "cmake_generator.h"
 #include "external_repo.h"
+#include "installed_package.h"
 
 Repository::Repository(std::string type) : m_Type(type)
 {
@@ -90,7 +91,7 @@ bool Repository::Deserialize(YAML::Node& node)
 			HelperFunctions::DeserializeVariable("path",library.path,lib_node);
 			HelperFunctions::DeserializeVariable("access",library.access,lib_node);
 			HelperFunctions::DeserializeVariable("debug_postfix",library.debugPostfix,lib_node);
-			//HelperFunctions::DeserializeVariable("is_alias",library.isTargetName,lib_node);
+			HelperFunctions::DeserializeVariable("is_variable",library.isVariableName,lib_node);
 			m_Libraries.push_back(library);
 		}
 	}
@@ -121,7 +122,7 @@ YAML::Node Repository::Serialize()
 		YAML::Node libNode;
 		libNode["path"] = library.path;
 		libNode["access"] = library.access;
-		//libNode["is_alias"] = library.isTargetName;
+		libNode["is_variable"] = library.isVariableName;
 		libNode["debug_postfix"] = library.debugPostfix;
 		node["libraries"].push_back(libNode);
 	}
@@ -227,6 +228,12 @@ bool RepositoryHandle::LoadFromSave(YAML::Node& node)
 			this->Get()->Deserialize(node);
 			return true;
 		}
+		if (node["type"].as<std::string>() == HelperFunctions::GetClassName<InstalledPackage>()) {
+			this->HoldType<InstalledPackage>();
+			this->Get()->Deserialize(node);
+			return true;
+		}
+
 		return false;
 	}
 	return false;

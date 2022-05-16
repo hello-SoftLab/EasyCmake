@@ -2,6 +2,24 @@
 #include "../object/registry.h"
 #include "../object/object.h"
 
+bool HelperFunctions::StringReplace(std::string& word, std::string oldVal, std::string newVal)
+{
+    std::string finalWord = "";
+    int index = 0;
+    for (auto& character : word) {
+        if (word.substr(index,oldVal.size()) == oldVal) {
+            finalWord += newVal;
+        }
+        else {
+            finalWord += character;
+        }
+        index++;
+    }
+
+
+    return true;
+}
+
 size_t HelperFunctions::HashPtr(void* ptr)
 {
     return std::hash<void*>()(ptr);

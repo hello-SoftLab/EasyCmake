@@ -151,12 +151,17 @@ std::string ExternalRepository::GetCMakeListsString()
 		if (m_Libraries.size() > 0) {
 			for (auto& library : m_Libraries) {
 
-				std::string libraryName = library.path;
+				std::string libraryName = "";
 
 				if (size_t location = library.path.find_last_of('/'); location != std::string::npos) {
-					libraryName = library.path.substr(0, location);
+					libraryName = library.path.substr(0, location + 1);
 					libraryName += "${CMAKE_STATIC_LIBRARY_PREFIX}";
-					libraryName += fmt::format("{}$<$<CONFIG:Debug>:{}>", library.path.substr(location), library.debugPostfix);
+					libraryName += fmt::format("{}$<$<CONFIG:Debug>:{}>", library.path.substr(location + 1), library.debugPostfix);
+					libraryName += "${CMAKE_STATIC_LIBRARY_SUFFIX}";
+				}
+				else {
+					libraryName += "${CMAKE_STATIC_LIBRARY_PREFIX}";
+					libraryName += fmt::format("{}$<$<CONFIG:Debug>:{}>", library.path, library.debugPostfix);
 					libraryName += "${CMAKE_STATIC_LIBRARY_SUFFIX}";
 				}
 

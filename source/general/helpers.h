@@ -72,7 +72,7 @@ public:
         return tokens;
     }
 
-    
+    static bool StringReplace(std::string& word,std::string oldVal,std::string newVal);
     
     static size_t HashPtr(void* ptr);
 
