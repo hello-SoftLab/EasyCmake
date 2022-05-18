@@ -62,6 +62,7 @@ public:
 
 struct TargetGenerator {
 	std::string name = "";
+	bool shared = false;
 	std::string type = "Executable";
 	std::string sourceFiles = "";
 	std::string cppStandard = "C++20";

@@ -99,7 +99,7 @@ add_subdirectory({})
 		if (target.Get()->type == "Library") {
 			stringToAdd += R"(
 #creating library
-add_library()" + fmt::format("{}\n", target.Get()->name);
+add_library()" + fmt::format("{} {}\n", target.Get()->name,target.Get()->shared? "SHARED" : "STATIC");
 		}
 
 		if (target.Get()->type == "Executable") {
@@ -109,6 +109,12 @@ add_executable()" + fmt::format("{}\n\n",target.Get()->name);
 		}
 
 		for (auto& location : HelperFunctions::SplitString(target.Get()->sourceFiles, "\n")) {
+			if (location.starts_with("$")) {
+				stringToAdd += fmt::format(R"(
+	{})", location);
+				continue;
+			}
+			
 			stringToAdd += R"(
 	${PROJECT_SOURCE_DIR}/)" + fmt::format("{}\n",location);
 		}
@@ -172,42 +178,172 @@ endif()
 #adding libraries...
 
 )";
+			
+			struct LibraryDependentOnDebugProperties {
+				std::string data = "";
+				bool isFromExternalRepo = false;
+				std::string aliasName = "";
+				LibrarySettings settings;
+			};
+			
+			std::vector < LibraryDependentOnDebugProperties> librariesDepedentOnDebug;
 
 			for (auto& library : target.Get()->libraries) {
-				stringToAdd += R"(
-target_link_libraries()" + fmt::format("{} ",target.Get()->name) + fmt::format("{} ",library.access);
-
+				std::string resultString = "";
+				std::string libraryName = "";
 				
-				stringToAdd += "${PROJECT_SOURCE_DIR}/" + fmt::format("{})\n", library.path);
+
+				if (size_t location = library.path.find_last_of('/'); location != std::string::npos) {
+					libraryName = library.path.substr(0, location + 1);
+					libraryName += "${CMAKE_STATIC_LIBRARY_PREFIX}";
+					libraryName += fmt::format("{}", library.path.substr(location + 1), library.debugPostfix);
+					//libraryName += "{0}${CMAKE_STATIC_LIBRARY_SUFFIX}";
+				}
+				else {
+					libraryName += "${CMAKE_STATIC_LIBRARY_PREFIX}";
+					libraryName += fmt::format("{}", library.path);
+					//libraryName += "{0}${CMAKE_STATIC_LIBRARY_SUFFIX}";
+				}
+				
+				
+				resultString += R"(target_link_libraries()" + fmt::format("{} ",target.Get()->name) + fmt::format("{} ",library.access);
+
+
+
+				if (library.isVariableName) {
+					resultString += fmt::format("{}", library.path);
+					stringToAdd += resultString + ")\n";
+					continue;
+				}
+				else if (library.path.starts_with("$")) {
+					resultString += fmt::format("{}",libraryName);
+				}
+				else {
+					resultString += "${PROJECT_SOURCE_DIR}/" + fmt::format("{}", libraryName);
+				}
+
+				if(library.debugPostfix != "" && !library.isVariableName){
+					LibraryDependentOnDebugProperties prop;
+					prop.isFromExternalRepo = false;
+					prop.data = resultString;
+					prop.settings = library;
+					librariesDepedentOnDebug.push_back(prop);
+					continue;
+				}
+				stringToAdd += resultString + "${CMAKE_STATIC_LIBRARY_SUFFIX})\n";
 				
 
 			}
 
 			for (auto& [name,library] : externalRepoLibraries) {
-				stringToAdd += R"(
-target_link_libraries()" + fmt::format("{} ", target.Get()->name) + fmt::format("{} ", library.access);
 
-				if (library.isVariableName) {
-					stringToAdd += fmt::format("{})\n",library.path);
-					continue;
-				}
+				std::string resultStr = "";
+
+
 				std::string libraryName = "";
+				std::string path_to_use = "";
 
 				if (size_t location = library.path.find_last_of('/'); location != std::string::npos) {
 					libraryName = library.path.substr(0, location + 1);
 					libraryName += "${CMAKE_STATIC_LIBRARY_PREFIX}";
-					libraryName += fmt::format("{}$<$<CONFIG:Debug>:{}>", library.path.substr(location + 1), library.debugPostfix);
-					libraryName += "${CMAKE_STATIC_LIBRARY_SUFFIX}";
+					libraryName += fmt::format("{}", library.path.substr(location + 1), library.debugPostfix);
+					//libraryName += "{0}${CMAKE_STATIC_LIBRARY_SUFFIX}";
 				}
 				else {
 					libraryName += "${CMAKE_STATIC_LIBRARY_PREFIX}";
-					libraryName += fmt::format("{}$<$<CONFIG:Debug>:{}>",library.path, library.debugPostfix);
-					libraryName += "${CMAKE_STATIC_LIBRARY_SUFFIX}";
+					libraryName += fmt::format("{}", library.path);
+					//libraryName += "{0}${CMAKE_STATIC_LIBRARY_SUFFIX}";
 				}
+
+				if (!library.isVariableName) {
+					stringToAdd += fmt::format(R"(
+add_library({0}_target STATIC IMPORTED)
+
+)",name);
+
+					resultStr += fmt::format(R"(set_target_properties({0}_target PROPERTIES IMPORTED_LOCATION )", name);
+					if (library.path.starts_with("$")) {
+						resultStr += fmt::format("{}", libraryName);
+					}
+					else {
+						resultStr += R"(${PROJECT_SOURCE_DIR}/vendor/)" + fmt::format("{}/", name) + libraryName;
+					}
+
+					if (library.debugPostfix != "") {
+						LibraryDependentOnDebugProperties prop;
+						prop.isFromExternalRepo = true;
+						prop.data = resultStr;
+						prop.settings = library;
+						prop.aliasName = name;
+						librariesDepedentOnDebug.push_back(prop);
+						continue;
+					}
+
+					resultStr += "${CMAKE_STATIC_LIBRARY_SUFFIX})\n";
+				
+					resultStr += R"(
+target_link_libraries()" + fmt::format("{} ", target.Get()->name) + fmt::format("{} {}_target", library.access, name) + ")\n";
+
+				}
+				else {
+					resultStr += R"(
+target_link_libraries()" + fmt::format("{} ", target.Get()->name) + fmt::format("{} {})\n", library.access,library.path);
+				}
+
+				
+				stringToAdd += resultStr;
 				
 
-				stringToAdd += R"(${PROJECT_SOURCE_DIR}/vendor/)" + fmt::format("{}/", name) + libraryName + ")\n";
+
 				
+			}
+
+			if (librariesDepedentOnDebug.size() != 0) {
+				
+				stringToAdd += R"(
+if(${CMAKE_BUILD_TYPE} STREQUAL "Debug"))";
+
+				
+				for (auto& prop : librariesDepedentOnDebug) {
+					std::string debugStr = "";
+					if (!prop.isFromExternalRepo) {
+						debugStr = fmt::format(R"(
+	{}{}
+)", prop.data, prop.settings.debugPostfix);
+					}
+					else {
+						debugStr += fmt::format(R"(
+	{}{})",prop.data,prop.settings.debugPostfix) + "${CMAKE_STATIC_LIBRARY_SUFFIX})" + fmt::format(R"(
+
+	target_link_libraries({} {} {}_target)
+)", target.Get()->name, prop.settings.access, prop.aliasName);
+
+					}
+					stringToAdd += debugStr;
+				}
+				stringToAdd += R"(else()
+)";
+			
+				for (auto& prop : librariesDepedentOnDebug) {
+					std::string nonDebugStr = "";
+					if (!prop.isFromExternalRepo) {
+						nonDebugStr = fmt::format(R"(
+	{}{}
+)", prop.data, prop.settings.debugPostfix);
+					}
+					else {
+						nonDebugStr += fmt::format(R"(
+	{}{})", prop.data, "") + "${CMAKE_STATIC_LIBRARY_SUFFIX})" + fmt::format(R"(
+
+	target_link_libraries({} {} {}_target)
+)", target.Get()->name, prop.settings.access, prop.aliasName);
+					}
+					stringToAdd += nonDebugStr;
+				}
+
+				stringToAdd += R"(endif()
+)";
+
 			}
 
 		}
@@ -221,14 +357,21 @@ target_link_libraries()" + fmt::format("{} ", target.Get()->name) + fmt::format(
 
 			for (auto& include : target.Get()->includes) {
 				stringToAdd += R"(
-target_include_directories()" + fmt::format("{} ", target.Get()->name) + fmt::format("{} ", include.access) + R"(${PROJECT_SOURCE_DIR}/)" +
-	fmt::format("{})\n",include.path);
+target_include_directories()" + fmt::format("{} ", target.Get()->name) + fmt::format("{} ", include.access);
+				if (!include.path.starts_with("$")) {
+					stringToAdd += R"(${PROJECT_SOURCE_DIR}/)";
+				}
+				stringToAdd += fmt::format("{})\n", include.path);
+	
 			}
 
 			for (auto& [name,include] : externalRepoIncludes) {
 				stringToAdd += R"(
-target_include_directories()" + fmt::format("{} ", target.Get()->name) + fmt::format("{} ", include.access) + R"(${PROJECT_SOURCE_DIR}/vendor/)" +
-fmt::format("{}/",name) + fmt::format("{})\n", include.path);
+target_include_directories()" + fmt::format("{} ", target.Get()->name) + fmt::format("{} ", include.access); 
+				if (!include.path.starts_with("$")) {
+					stringToAdd += R"(${PROJECT_SOURCE_DIR}/vendor/)" + fmt::format("{}/", name);
+				}
+				stringToAdd += fmt::format("{})\n", include.path);
 			}
 		}
 
@@ -554,6 +697,8 @@ bool CMakeSerializer::DeserializeFromNode(YAML::Node& mainNode)
 
 			HelperFunctions::DeserializeVariable("type", newTarget.type, node);
 
+			HelperFunctions::DeserializeVariable("is_shared", newTarget.shared, node);
+
 			HelperFunctions::DeserializeVariable("sources", newTarget.sourceFiles, node);
 
 			if (node["includes"]) {
@@ -571,7 +716,7 @@ bool CMakeSerializer::DeserializeFromNode(YAML::Node& mainNode)
 					HelperFunctions::DeserializeVariable("path", library.path, lib_node);
 					HelperFunctions::DeserializeVariable("access", library.access, lib_node);
 					HelperFunctions::DeserializeVariable("debug_postfix", library.debugPostfix, lib_node);
-					//HelperFunctions::DeserializeVariable("is_alias", library.isTargetName, lib_node);
+					HelperFunctions::DeserializeVariable("is_variable", library.isVariableName, lib_node);
 					newTarget.libraries.push_back(library);
 				}
 			}
@@ -617,6 +762,7 @@ YAML::Node CMakeSerializer::SerializeToNode()
 		targetNode["name"] = target.Get()->name;
 		targetNode["cpp_standard"] = target.Get()->cppStandard;
 		targetNode["type"] = target.Get()->type;
+		targetNode["is_shared"] = target.Get()->shared;
 
 		if (target.Get()->sourceFiles != "") {
 			targetNode["sources"] = target.Get()->sourceFiles;
@@ -633,7 +779,7 @@ YAML::Node CMakeSerializer::SerializeToNode()
 			YAML::Node libNode;
 			libNode["path"] = library.path;
 			libNode["access"] = library.access;
-			//libNode["is_alias"] = library.isTargetName;
+			libNode["is_variable"] = library.isVariableName;
 			libNode["debug_postfix"] = library.debugPostfix;
 			targetNode["libraries"].push_back(libNode);
 		}

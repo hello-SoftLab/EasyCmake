@@ -626,6 +626,17 @@ void TargetGenerator::ShowWidgets()
 			ImGui::EndCombo();
 		}
 
+
+		if (this->type == "Library") {
+			ImGui::TableNextColumn();
+
+			ImGui::Text("Shared?");
+
+			ImGui::TableNextColumn();
+
+			ImGui::Checkbox(("##CheckboxForTarget" + HelperFunctions::GenerateStringHash(this)).c_str(),&shared);
+		}
+
 		ImGui::TableNextColumn();
 
 		ImGui::Text("C++ Standard");

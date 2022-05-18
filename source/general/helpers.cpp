@@ -4,6 +4,7 @@
 
 bool HelperFunctions::StringReplace(std::string& word, std::string oldVal, std::string newVal)
 {
+   
     std::string finalWord = "";
     int index = 0;
     for (auto& character : word) {
