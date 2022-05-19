@@ -21,11 +21,12 @@ bool Repository::CheckRepoValidity()
 		CMakeGenerator::ShowErrorPopup("Please add a valid alias to the repository!");
 		return false;
 	}
-
+	/*
 	if (CMakeGenerator::FindAliasInRepositories(m_Alias) && CMakeGenerator::Settings().tempRepo.operator bool()) {
 		CMakeGenerator::ShowErrorPopup("Alias " + m_Alias + " already exists!\nPlease choose another name for your repository.");
 		return false;
 	}
+	*/
 
 	return this->IsRepoReady();
 }

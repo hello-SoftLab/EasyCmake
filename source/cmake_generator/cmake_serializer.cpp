@@ -235,6 +235,7 @@ endif()
 
 			}
 
+			std::vector<std::string> usedNames;
 			for (auto& [name,library] : externalRepoLibraries) {
 
 				std::string resultStr = "";
@@ -256,10 +257,14 @@ endif()
 				}
 
 				if (!library.isVariableName) {
-					stringToAdd += fmt::format(R"(
+					if (!(std::find(usedNames.begin(), usedNames.end(), name) != usedNames.end())) {
+
+						stringToAdd += fmt::format(R"(
 add_library({0}_target STATIC IMPORTED)
 
-)",name);
+)", name);
+						usedNames.push_back(name);
+					}
 
 					resultStr += fmt::format(R"(set_target_properties({0}_target PROPERTIES IMPORTED_LOCATION )", name);
 					if (library.path.starts_with("$")) {

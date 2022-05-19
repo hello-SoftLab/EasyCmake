@@ -201,10 +201,7 @@ bool ExternalRepository::IsRepoReady()
 	}
 
 	if (CMakeGenerator::Settings().tempRepo) {
-		if (CheckIfLocationAlreadyRegistered()) {
-			CMakeGenerator::ShowErrorPopup("Repository location '" + this->m_RepoLocation + "' was already registered!\nPlease choose another location.");
-			return false;
-		}
+		
 	}
 	return true;
 }
