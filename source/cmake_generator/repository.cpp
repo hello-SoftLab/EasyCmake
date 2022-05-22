@@ -80,8 +80,7 @@ bool Repository::Deserialize(YAML::Node& node)
 	if (node["includes"]) {
 		for (auto include_node : node["includes"]) {
 			IncludeSettings include;
-			HelperFunctions::DeserializeVariable("path",include.path,include_node);
-			HelperFunctions::DeserializeVariable("access",include.access,include_node);
+			include.Deserialize(include_node);
 			m_Includes.push_back(include);
 		}
 	}
@@ -89,10 +88,7 @@ bool Repository::Deserialize(YAML::Node& node)
 	if (node["libraries"]) {
 		for (auto lib_node : node["libraries"]) {
 			LibrarySettings library;
-			HelperFunctions::DeserializeVariable("path",library.path,lib_node);
-			HelperFunctions::DeserializeVariable("access",library.access,lib_node);
-			HelperFunctions::DeserializeVariable("debug_postfix",library.debugPostfix,lib_node);
-			HelperFunctions::DeserializeVariable("is_variable",library.isVariableName,lib_node);
+			library.Deserialize(lib_node);
 			m_Libraries.push_back(library);
 		}
 	}
@@ -114,21 +110,11 @@ YAML::Node Repository::Serialize()
 	node["type"] = m_Type;
 	node["sources"] = m_SourcesToAdd;
 	for (auto& include : m_Includes) {
-		YAML::Node includeNode;
-		includeNode["path"] = include.path;
-		includeNode["access"] = include.access;
-		node["includes"].push_back(includeNode);
+		node["includes"].push_back(include.Serialize());
 	}
 	for (auto& library : m_Libraries) {
-		YAML::Node libNode;
-		libNode["path"] = library.path;
-		libNode["access"] = library.access;
-		libNode["is_variable"] = library.isVariableName;
-		libNode["debug_postfix"] = library.debugPostfix;
-		node["libraries"].push_back(libNode);
+		node["libraries"].push_back(library.Serialize());
 	}
-
-	
 
 	node["derived"] = this->OnSerialize();
 

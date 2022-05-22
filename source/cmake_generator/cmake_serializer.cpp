@@ -709,8 +709,7 @@ bool CMakeSerializer::DeserializeFromNode(YAML::Node& mainNode)
 			if (node["includes"]) {
 				for (auto include_node : node["includes"]) {
 					IncludeSettings include;
-					HelperFunctions::DeserializeVariable("path", include.path, include_node);
-					HelperFunctions::DeserializeVariable("access", include.access, include_node);
+					include.Deserialize(include_node);
 					newTarget.includes.push_back(include);
 				}
 			}
@@ -718,10 +717,7 @@ bool CMakeSerializer::DeserializeFromNode(YAML::Node& mainNode)
 			if (node["libraries"]) {
 				for (auto lib_node : node["libraries"]) {
 					LibrarySettings library;
-					HelperFunctions::DeserializeVariable("path", library.path, lib_node);
-					HelperFunctions::DeserializeVariable("access", library.access, lib_node);
-					HelperFunctions::DeserializeVariable("debug_postfix", library.debugPostfix, lib_node);
-					HelperFunctions::DeserializeVariable("is_variable", library.isVariableName, lib_node);
+					library.Deserialize(lib_node);
 					newTarget.libraries.push_back(library);
 				}
 			}
@@ -774,19 +770,11 @@ YAML::Node CMakeSerializer::SerializeToNode()
 		}
 
 		for (auto& include : target.Get()->includes) {
-			YAML::Node includeNode;
-			includeNode["path"] = include.path;
-			includeNode["access"] = include.access;
-			targetNode["includes"].push_back(includeNode);
+			targetNode["includes"].push_back(include.Serialize());
 		}
 
 		for (auto& library : target.Get()->libraries) {
-			YAML::Node libNode;
-			libNode["path"] = library.path;
-			libNode["access"] = library.access;
-			libNode["is_variable"] = library.isVariableName;
-			libNode["debug_postfix"] = library.debugPostfix;
-			targetNode["libraries"].push_back(libNode);
+			targetNode["libraries"].push_back(library.Serialize());
 		}
 
 		for (auto& repo : target.Get()->externalRepos) {

@@ -9,6 +9,10 @@ struct LibrarySettings {
 	std::string debugPostfix = "";
 	bool isVariableName=false;
 	std::string access = "PUBLIC";
+	bool shared = false;
+
+	YAML::Node Serialize();
+	bool Deserialize(YAML::Node& node);
 
 	static void ShowWidgets(std::vector<LibrarySettings>& libraries);
 
