@@ -7,7 +7,7 @@ struct LibrarySettings {
 
 	std::string path = "";
 	std::string debugPostfix = "";
-	bool isVariableName=false;
+	bool isVariableName=true;
 	std::string access = "PUBLIC";
 	bool shared = false;
 

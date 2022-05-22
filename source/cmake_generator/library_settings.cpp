@@ -44,14 +44,17 @@ void LibrarySettings::ShowWidgets(std::vector<LibrarySettings>& libraries)
 
 			ImGui::TableNextColumn();
 
-			ImGui::Text("Shared?");
+			if (!library.isVariableName) {
 
-			ImGui::TableNextColumn();
-			
-			ImGui::Checkbox(("##CheckboxForSharedLib" + HelperFunctions::GenerateStringHash(&library)).c_str(), &library.shared);
-			
-			ImGui::TableNextColumn();
+				ImGui::Text("Shared?");
 
+				ImGui::TableNextColumn();
+
+				ImGui::Checkbox(("##CheckboxForSharedLib" + HelperFunctions::GenerateStringHash(&library)).c_str(), &library.shared);
+
+				ImGui::TableNextColumn();
+
+			}
 			ImGui::Text("Acess");
 
 			ImGui::TableNextColumn();
@@ -79,14 +82,18 @@ void LibrarySettings::ShowWidgets(std::vector<LibrarySettings>& libraries)
 				ImGui::EndCombo();
 			}
 
+
+			if (!library.isVariableName) {
 			ImGui::TableNextColumn();
 
-			ImGui::Text("Debug Postfix");
 
-			ImGui::TableNextColumn();
+				ImGui::Text("Debug Postfix");
 
-			ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-			ImGui::InputText(("##dpostfixForLibrary" + HelperFunctions::GenerateStringHash(&library)).c_str(), &library.debugPostfix);
+				ImGui::TableNextColumn();
+
+				ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+				ImGui::InputText(("##dpostfixForLibrary" + HelperFunctions::GenerateStringHash(&library)).c_str(), &library.debugPostfix);
+			}
 
 			ImGui::EndTable();
 

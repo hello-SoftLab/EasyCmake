@@ -25,14 +25,6 @@ void ExternalRepository::SetupPopupWidgets()
 
 		ImGui::TableNextColumn();
 
-		ImGui::Text("Should Build");
-
-		ImGui::TableNextColumn();
-
-		ImGui::Checkbox(("##shouldbuild" + GetHash()).c_str(), &m_ShouldBuild);
-
-		ImGui::TableNextColumn();
-
 		ImGui::TextWrapped("Source Files To Add");
 
 		ImGui::TableNextColumn();
@@ -76,16 +68,10 @@ ExternalRepository::ExternalRepository() : Repository(HelperFunctions::GetClassN
 
 }
 
-bool ExternalRepository::ShouldBuild()
-{
-	return m_ShouldBuild;
-}
-
 bool ExternalRepository::OnDeserialize(YAML::Node& node)
 {
 	HelperFunctions::DeserializeVariable("location",m_RepoLocation,node);
 	HelperFunctions::DeserializeVariable("git_tag",m_GitTag,node);
-	HelperFunctions::DeserializeVariable("should_build",m_ShouldBuild,node);
 	HelperFunctions::DeserializeVariable("cmake_args",m_CmakeArgs,node);
 	return true;
 }
@@ -95,7 +81,6 @@ YAML::Node ExternalRepository::OnSerialize()
 	YAML::Node node;
 	node["location"] = m_RepoLocation;
 	node["git_tag"] = m_GitTag;
-	node["should_build"] = m_ShouldBuild;
 	node["cmake_args"] = m_CmakeArgs;
 	return node;
 }
@@ -137,59 +122,34 @@ std::string ExternalRepository::GetCMakeListsString()
 	stringToAdd += R"(
 #repository download and settings for alias )" + fmt::format("{}...\n\n",this->m_Alias);
 
-	stringToAdd += R"(
-	dir_exists()" + fmt::format("{}_exists ", this->m_Alias) + "${PROJECT_SOURCE_DIR}/vendor/" + fmt::format("{})\n\n", m_Alias);
-
-	stringToAdd += R"(
-	if(NOT ${)" + fmt::format("{}_exists",m_Alias) + "})\n";
-
-	if (m_ShouldBuild) {
+	if (m_CmakeArgs != "") {
 		stringToAdd += R"(
-		ExternalProject_Add()" + fmt::format("{}\n", m_Alias) + R"(
-			GIT_REPOSITORY )" + fmt::format("{}\n", m_RepoLocation) + R"(
-			GIT_TAG )" + fmt::format("{}\n", m_GitTag) + GetCMakeArgs();
-		if (m_Libraries.size() > 0) {
-			for (auto& library : m_Libraries) {
+	#adding options
+)";
+	}
 
-				std::string libraryName = "";
-
-				if (size_t location = library.path.find_last_of('/'); location != std::string::npos) {
-					libraryName = library.path.substr(0, location + 1);
-					libraryName += "${CMAKE_STATIC_LIBRARY_PREFIX}";
-					libraryName += fmt::format("{}$<$<CONFIG:Debug>:{}>", library.path.substr(location + 1), library.debugPostfix);
-					libraryName += "${CMAKE_STATIC_LIBRARY_SUFFIX}";
-				}
-				else {
-					libraryName += "${CMAKE_STATIC_LIBRARY_PREFIX}";
-					libraryName += fmt::format("{}$<$<CONFIG:Debug>:{}>", library.path, library.debugPostfix);
-					libraryName += "${CMAKE_STATIC_LIBRARY_SUFFIX}";
-				}
-
-				stringToAdd += R"(
-		BUILD_BYPRODUCTS ${PROJECT_SOURCE_DIR}/vendor/)" + fmt::format("{}/", m_Alias) + libraryName + "\n";
-			
-			}
+	for (auto& definition : HelperFunctions::SplitString(m_CmakeArgs, "\n")) {
+		auto vec = HelperFunctions::SplitString(definition, "=");
+		if (vec.size() < 2) {
+			continue;
 		}
-		stringToAdd += R"(
-		)
-
-	endif()
-
-)";
-	}
-	else {
-		stringToAdd += R"(
-		FetchContent_Declare()" + fmt::format("{}\n", m_Alias) + R"(
-			GIT_REPOSITORY )" + fmt::format("{}\n", m_RepoLocation) + R"(
-			GIT_TAG )" + fmt::format("{}\n",m_GitTag) + R"(
-			SOURCE_DIR ${PROJECT_SOURCE_DIR}/vendor/)" + fmt::format("{}\n",m_Alias) + R"(
-		)
-		FetchContent_MakeAvailable()" + fmt::format("{})",m_Alias) + R"(
-	endif()
-
-)";
+		stringToAdd += fmt::format(R"(
+	set({} {} CACHE INTERNAL "")
+)", vec[0], vec[1]);
 	}
 
+	stringToAdd += R"(
+	FetchContent_Declare()" + fmt::format("{}_project\n", m_Alias) + R"(
+		GIT_REPOSITORY )" + fmt::format("{}\n", m_RepoLocation) + R"(
+		GIT_TAG )" + fmt::format("{}\n", m_GitTag) + R"(
+		SOURCE_DIR ${PROJECT_SOURCE_DIR}/vendor/)" + fmt::format("{}\n", m_Alias) + R"(
+	)
+
+	list(APPEND ${PROJECT_NAME}_DEPENDENCIES )" + m_Alias + R"(_project)
+
+)";
+
+	
 	return stringToAdd;
 }
 

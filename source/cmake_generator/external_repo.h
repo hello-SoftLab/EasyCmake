@@ -9,12 +9,11 @@ class ExternalRepository : public Repository {
 public:
 	ExternalRepository();
 
-	bool ShouldBuild();
 
 private:
 	std::string m_RepoLocation="";
 	std::string m_GitTag = "";
-	bool m_ShouldBuild = false;
+	
 	std::string m_CmakeArgs = "";
  
 	bool OnDeserialize(YAML::Node& node) override;

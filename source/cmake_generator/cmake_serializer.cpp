@@ -46,6 +46,7 @@ include(GNUInstallDirs)
 include(ExternalProject)
 include(FetchContent)
 
+
 #project name
 )";
 
@@ -74,11 +75,10 @@ add_subdirectory({})
 
 	if (prop.repositories.size() > 0) {
 
-		stringToAdd += R"(
+		stringToAdd += fmt::format(R"(
 # --------------------- Repository declarations ------------------------
 
-)";
-
+)");
 
 
 		for (auto& repo : prop.repositories) {
@@ -86,7 +86,24 @@ add_subdirectory({})
 				continue;
 			}
 			stringToAdd += repo.Get()->GetCMakeListsString();
+			
 		}
+
+		stringToAdd += R"(
+	FetchContent_MakeAvailable(${${PROJECT_NAME}_DEPENDENCIES})
+
+	foreach(X IN LISTS ${PROJECT_NAME}_DEPENDENCIES)
+
+		FetchContent_GetProperties(${X}
+			SOURCE_DIR ${X}_SOURCE_DIR
+			BINARY_DIR ${X}_BINARY_DIR
+		)
+
+	endforeach() 
+)";
+
+		
+
 	}
 
 	
@@ -146,7 +163,7 @@ add_executable()" + fmt::format("{}\n\n",target.Get()->name);
 			}
 
 
-			if (repo.IsHoldingType<ExternalRepository>() && repo.GetAs<ExternalRepository>()->ShouldBuild()) {
+			if (repo.IsHoldingType<ExternalRepository>()) {
 				externalRepoCount.push_back(repo.Get()->GetAlias());
 			}
 		}
@@ -156,22 +173,6 @@ add_executable()" + fmt::format("{}\n\n",target.Get()->name);
 
 set_property(TARGET )" + fmt::format("{}", target.Get()->name) + R"( PROPERTY CXX_STANDARD )" + fmt::format("{})\n\n", target.Get()->cppStandard.substr(3));
 
-		
-		if (externalRepoCount.size() > 0) {
-			stringToAdd += R"(
-#setting dependencies...
-
-)";
-
-			for (auto& dep : externalRepoCount) {
-
-				stringToAdd += R"(
-if(NOT ${)" + fmt::format("{}_exists", dep) + R"(})
-	add_dependencies()" + fmt::format("{} ", target.Get()->name) + fmt::format("{})", dep) + R"(
-endif()
-)";
-			}
-		}
 
 		if (target.Get()->libraries.size() > 0 || externalRepoLibraries.size() > 0) {
 			stringToAdd += R"(
